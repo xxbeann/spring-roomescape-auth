@@ -15,7 +15,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             HttpServletRequest request,
             HttpServletResponse response,
             Object handler
-    ) throws Exception {
+    ) {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute(SESSION_KEY) == null) {
             throw new UnauthorizedException();
