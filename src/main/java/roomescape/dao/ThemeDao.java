@@ -16,28 +16,6 @@ public class ThemeDao {
 
     private final JdbcTemplate jdbcTemplate;
 
-    private RowMapper<Theme> themeRowMapper = (resultSet, rowNum) -> {
-        Theme theme = new Theme(
-                resultSet.getLong("id"),
-                resultSet.getString("name"),
-                resultSet.getString("description"),
-                resultSet.getString("img_url")
-        );
-        return theme;
-    };
-
-    private RowMapper<PopularThemeProjection> popularThemeRowMapper = (resultSet, rowNum) -> {
-        PopularThemeProjection popularThemeProjection = new PopularThemeProjection(
-                resultSet.getLong("id"),
-                resultSet.getString("name"),
-                resultSet.getString("description"),
-                resultSet.getString("img_url"),
-                resultSet.getLong("theme_rank"),
-                resultSet.getLong("reservation_count")
-        );
-        return popularThemeProjection;
-    };
-
     public ThemeDao(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -106,4 +84,26 @@ public class ThemeDao {
                 to.toString());
         return popularThemeProjections;
     }
+
+    private RowMapper<Theme> themeRowMapper = (resultSet, rowNum) -> {
+        Theme theme = new Theme(
+                resultSet.getLong("id"),
+                resultSet.getString("name"),
+                resultSet.getString("description"),
+                resultSet.getString("img_url")
+        );
+        return theme;
+    };
+
+    private RowMapper<PopularThemeProjection> popularThemeRowMapper = (resultSet, rowNum) -> {
+        PopularThemeProjection popularThemeProjection = new PopularThemeProjection(
+                resultSet.getLong("id"),
+                resultSet.getString("name"),
+                resultSet.getString("description"),
+                resultSet.getString("img_url"),
+                resultSet.getLong("theme_rank"),
+                resultSet.getLong("reservation_count")
+        );
+        return popularThemeProjection;
+    };
 }
