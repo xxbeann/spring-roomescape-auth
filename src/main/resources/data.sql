@@ -101,3 +101,8 @@ VALUES ('이든', '2026-04-29', 1, 1),
        ('세아', '2026-05-19', 6, 3),
        ('도윤', '2026-05-19', 9, 1),
        ('하율', '2026-05-19', 10, 2);
+
+INSERT INTO member (email, password, name)
+VALUES ('admin@email.com', 'password', '관리자'),
+       ('brown@email.com', 'password', '브라운'),
+       ('jeongkong@email.com', 'password', '정콩이');

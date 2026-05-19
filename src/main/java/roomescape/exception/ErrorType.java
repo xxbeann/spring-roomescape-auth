@@ -21,7 +21,9 @@ public enum ErrorType {
     RESERVATION_TIME_IN_USE(HttpStatus.CONFLICT, "RESERVATION_TIME409_001", "예약이 존재하는 예약시간은 삭제할 수 없습니다."),
 
     THEME_NOT_FOUND(HttpStatus.NOT_FOUND, "THEME404_001", "존재하지 않는 테마입니다."),
-    THEME_IN_USE(HttpStatus.CONFLICT, "THEME409_001", "예약이 존재하는 테마는 삭제할 수 없습니다.");
+    THEME_IN_USE(HttpStatus.CONFLICT, "THEME409_001", "예약이 존재하는 테마는 삭제할 수 없습니다."),
+
+    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH401_001", "이메일 또는 비밀번호가 일치하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String errorCode;
