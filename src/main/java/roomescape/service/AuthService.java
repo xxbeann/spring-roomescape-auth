@@ -29,4 +29,8 @@ public class AuthService {
         }
         return member;
     }
+
+    public Member findCurrentMember(Long memberId) {
+        return memberDao.findById(memberId);
+    }
 }

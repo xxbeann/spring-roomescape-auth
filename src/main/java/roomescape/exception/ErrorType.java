@@ -13,7 +13,7 @@ public enum ErrorType {
 
     PAST_RESERVATION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "RESERVATION400_001", "지나간 날짜와 시간으로는 예약할 수 없습니다."),
     PAST_RESERVATION_CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "RESERVATION400_002", "이미 지난 예약은 취소할 수 없습니다."),
-    RESERVATION_OWNER_MISMATCH(HttpStatus.BAD_REQUEST, "RESERVATION400_003", "예약자의 이름이 일치하지 않습니다."),
+    RESERVATION_OWNER_MISMATCH(HttpStatus.BAD_REQUEST, "RESERVATION400_003", "본인 예약만 변경/취소할 수 있습니다."),
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "RESERVATION404_001", "존재하지 않는 예약입니다."),
     RESERVATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "RESERVATION409_001", "이미 예약이 존재합니다."),
 
@@ -23,7 +23,8 @@ public enum ErrorType {
     THEME_NOT_FOUND(HttpStatus.NOT_FOUND, "THEME404_001", "존재하지 않는 테마입니다."),
     THEME_IN_USE(HttpStatus.CONFLICT, "THEME409_001", "예약이 존재하는 테마는 삭제할 수 없습니다."),
 
-    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH401_001", "이메일 또는 비밀번호가 일치하지 않습니다.");
+    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH401_001", "이메일 또는 비밀번호가 일치하지 않습니다."),
+    AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH401_002", "로그인이 필요한 요청입니다.");
 
     private final HttpStatus httpStatus;
     private final String errorCode;

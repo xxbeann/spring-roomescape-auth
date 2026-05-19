@@ -1,12 +1,10 @@
 package roomescape.controller;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import java.net.URI;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -14,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import roomescape.domain.Reservation;
 import roomescape.dto.request.ReservationCreateRequest;
@@ -24,8 +21,9 @@ import roomescape.service.ReservationService;
 
 @RequestMapping("/api/v1/reservations")
 @RestController
-@Validated
 public class ReservationController {
+
+    private static final String SESSION_KEY = "USER";
 
     private final ReservationService reservationService;
 
@@ -34,21 +32,22 @@ public class ReservationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ReservationResponse>> getReservations(
-            @Size(min = 2, max = 10)
-            @Pattern(regexp = "^[a-zA-Z가-힣]+$")
-            @RequestParam(required = false) String userName
-    ) {
-        List<Reservation> reservations = reservationService.getReservations(userName);
+    public ResponseEntity<List<ReservationResponse>> getReservations(HttpSession session) {
+        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+
+        List<Reservation> reservations = reservationService.getReservations(memberId);
         List<ReservationResponse> reservationResponses = ReservationResponse.fromAll(reservations);
         return ResponseEntity.ok().body(reservationResponses);
     }
 
     @PostMapping
     public ResponseEntity<ReservationResponse> createReservation(
-            @Valid @RequestBody ReservationCreateRequest reservationCreateRequest) {
+            @Valid @RequestBody ReservationCreateRequest reservationCreateRequest,
+            HttpSession session) {
+        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+
         Reservation savedReservation = reservationService.createReservation(
-                reservationCreateRequest.name(),
+                memberId,
                 reservationCreateRequest.date(),
                 reservationCreateRequest.timeId(),
                 reservationCreateRequest.themeId()
@@ -61,11 +60,14 @@ public class ReservationController {
     @PatchMapping("/{id}")
     public ResponseEntity<ReservationResponse> updateReservation(
             @PathVariable Long id,
-            @Valid @RequestBody ReservationUpdateRequest reservationUpdateRequest) {
+            @Valid @RequestBody ReservationUpdateRequest reservationUpdateRequest,
+            HttpSession session) {
+        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+
         Reservation updatedReservation = reservationService.updateReservation(
                 id,
                 reservationUpdateRequest.date(),
-                reservationUpdateRequest.name(),
+                memberId,
                 reservationUpdateRequest.timeId()
         );
         ReservationResponse reservationResponse = ReservationResponse.from(updatedReservation);
@@ -73,8 +75,10 @@ public class ReservationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteReservation(@PathVariable Long id) {
-        reservationService.deleteReservation(id);
+    public ResponseEntity<Void> deleteReservation(@PathVariable Long id, HttpSession session) {
+        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+
+        reservationService.deleteReservation(id, memberId);
         return ResponseEntity.noContent().build();
     }
 }

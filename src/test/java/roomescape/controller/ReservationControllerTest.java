@@ -18,47 +18,23 @@ import org.springframework.test.context.jdbc.Sql;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class ReservationControllerTest {
 
-    @Test
-    void 예약_조회시_userName이_없으면_200을_반환한다() {
-        RestAssured.given().log().all()
-                .when().get("/api/v1/reservations")
-                .then().log().all()
-                .statusCode(200)
-                .body("size()", is(0));
-    }
+    private static final String INSERT_DEFAULT_MEMBER_SQL = """
+            INSERT INTO member (id, email, password, name)
+            VALUES (1, 'brown@email.com', 'password', '브라운');
+            """;
+
+    private static final String EMAIL = "brown@email.com";
+    private static final String PASSWORD = "password";
 
     @Test
-    void 예약_조회시_userName이_있으면_해당_이름의_예약만_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
-
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(reservationParams(Map.of("name", "브라운", "timeId", 1L)))
-                .when().post("/api/v1/reservations")
-                .then().log().all()
-                .statusCode(201);
-
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(reservationParams(Map.of("name", "정콩이", "timeId", 2L)))
-                .when().post("/api/v1/reservations")
-                .then().log().all()
-                .statusCode(201);
-
-        RestAssured.given().log().all()
-                .when().get("/api/v1/reservations?userName=브라운")
-                .then().log().all()
-                .statusCode(200)
-                .body("size()", is(1))
-                .body("[0].name", is("브라운"));
-    }
-
-    @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약_생성시_성공하면_201을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams())
                 .when().post("/api/v1/reservations")
@@ -68,10 +44,14 @@ public class ReservationControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약_조회시_생성된_예약을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams())
                 .when().post("/api/v1/reservations")
@@ -80,22 +60,27 @@ public class ReservationControllerTest {
                 .body("id", is(1));
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .when().get("/api/v1/reservations")
                 .then().log().all()
                 .statusCode(200)
                 .body("size()", is(1))
                 .body("[0].id", is(1))
-                .body("[0].name", is("브라운"))
+                .body("[0].memberId", is(1))
                 .body("[0].date", is(LocalDate.now().plusDays(1).toString()))
                 .body("[0].time.id", is(1))
                 .body("[0].time.startAt", is("10:00"));
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약_삭제시_성공하면_204를_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams())
                 .when().post("/api/v1/reservations")
@@ -104,17 +89,20 @@ public class ReservationControllerTest {
                 .body("id", is(1));
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .when().get("/api/v1/reservations")
                 .then().log().all()
                 .statusCode(200)
                 .body("size()", is(1));
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .when().delete("/api/v1/reservations/1")
                 .then().log().all()
                 .statusCode(204);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .when().get("/api/v1/reservations")
                 .then().log().all()
                 .statusCode(200)
@@ -122,8 +110,12 @@ public class ReservationControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약_삭제시_존재하지_않는_예약이면_404를_반환한다() {
+        String cookie = authenticate();
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .when().delete("/api/v1/reservations/1")
                 .then().log().all()
                 .statusCode(404)
@@ -131,10 +123,14 @@ public class ReservationControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약_생성시_예약_가능한_시간이면_201을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams())
                 .when().post("/api/v1/reservations")
@@ -142,6 +138,7 @@ public class ReservationControllerTest {
                 .statusCode(201);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams(Map.of("timeId", 2L)))
                 .when().post("/api/v1/reservations")
@@ -150,10 +147,14 @@ public class ReservationControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약_생성시_이미_예약된_시간이면_409를_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams())
                 .when().post("/api/v1/reservations")
@@ -161,6 +162,7 @@ public class ReservationControllerTest {
                 .statusCode(201);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams(Map.of("timeId", 1L)))
                 .when().post("/api/v1/reservations")
@@ -170,14 +172,17 @@ public class ReservationControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약_생성시_date가_누락되면_400을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
 
         Map<String, Object> params = reservationParams();
         params.remove("date");
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().post("/api/v1/reservations")
@@ -187,11 +192,14 @@ public class ReservationControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약_생성시_날짜_형식이_잘못되면_400을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams(Map.of("date", "2026/05/13")))
                 .when().post("/api/v1/reservations")
@@ -201,39 +209,14 @@ public class ReservationControllerTest {
     }
 
     @Test
-    void 예약_생성시_이름이_비어있으면_400을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
-
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(reservationParams(Map.of("name", "")))
-                .when().post("/api/v1/reservations")
-                .then().log().all()
-                .statusCode(400)
-                .body("errorCode", is("COMMON400_001"));
-    }
-
-    @Test
-    void 예약_생성시_이름에_특수문자가_포함되면_400을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
-
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(reservationParams(Map.of("name", "한+한")))
-                .when().post("/api/v1/reservations")
-                .then().log().all()
-                .statusCode(400)
-                .body("errorCode", is("COMMON400_001"));
-    }
-
-    @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약_생성시_지난_날짜이면_400을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams(Map.of(
                         "date", LocalDate.now().minusDays(1).toString()
@@ -245,33 +228,17 @@ public class ReservationControllerTest {
     }
 
     @Test
-    void 사용자가_자신의_이름으로_예약을_조회할때_이름에_특수문자가_있으면_400을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
-
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(reservationParams())
-                .when().post("/api/v1/reservations")
-                .then().log().all()
-                .statusCode(201)
-                .body("id", is(1));
-
-        RestAssured.given().log().all()
-                .when().get("/api/v1/reservations?userName=브라+운")
-                .then().log().all()
-                .statusCode(400)
-                .body("errorCode", is("COMMON400_006"));
-    }
-
-    @Test
     @Sql(statements = {
+            "INSERT INTO member (id, email, password, name) VALUES (1, 'brown@email.com', 'password', '브라운')",
             "INSERT INTO reservation_time (id, start_at) VALUES (1, '10:00')",
             "INSERT INTO theme (id, name, description, img_url) VALUES (1, '이든의 공포 하우스', '이든이 귀신으로 나옴', 'https://images.example.com/themes/horror-house.jpg')",
-            "INSERT INTO reservation (id, name, date, time_id, theme_id) VALUES (1, '브라운', DATEADD('DAY', -1, CURRENT_DATE()), 1, 1)"
+            "INSERT INTO reservation (id, member_id, date, time_id, theme_id) VALUES (1, 1, DATEADD('DAY', -1, CURRENT_DATE()), 1, 1)"
     })
     void 이미_지난_예약을_삭제하면_400을_반환한다() {
+        String cookie = authenticate();
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .when().delete("/api/v1/reservations/1")
                 .then().log().all()
                 .statusCode(400)
@@ -279,16 +246,18 @@ public class ReservationControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 사용자가_본인의_예약_시간을_변경할_수_있다() {
-        createDefaultThemes();
-        createDefaultTimes();
+        String cookie = authenticate();
+        createDefaultThemes(cookie);
+        createDefaultTimes(cookie);
 
         Map<String, Object> params = new HashMap<>();
-        params.put("name", "브라운");
         params.put("date", LocalDate.now().plusDays(1).toString());
         params.put("timeId", 3L);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams())
                 .when().post("/api/v1/reservations")
@@ -297,6 +266,7 @@ public class ReservationControllerTest {
                 .body("id", is(1));
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().patch("/api/v1/reservations/1")
@@ -305,11 +275,41 @@ public class ReservationControllerTest {
                 .body("time.startAt", is("12:00"));
     }
 
-    private void createDefaultTimes() {
+    @Test
+    void 비로그인_상태로_예약_생성시_401을_반환한다() {
+        RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .body(reservationParams())
+                .when().post("/api/v1/reservations")
+                .then().log().all()
+                .statusCode(401);
+    }
+
+    @Test
+    void 비로그인_상태로_예약_조회시_401을_반환한다() {
+        RestAssured.given().log().all()
+                .when().get("/api/v1/reservations")
+                .then().log().all()
+                .statusCode(401);
+    }
+
+    private String authenticate() {
+        return RestAssured
+                .given()
+                .param("email", EMAIL)
+                .param("password", PASSWORD)
+                .when().post("/api/v1/auth/login")
+                .then()
+                .extract().header("Set-Cookie")
+                .split(";")[0];
+    }
+
+    private void createDefaultTimes(String cookie) {
         Map<String, String> time = new HashMap<>();
         time.put("startAt", "10:00");
 
         RestAssured.given().contentType(ContentType.JSON)
+                .header("Cookie", cookie)
                 .body(time)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
@@ -318,6 +318,7 @@ public class ReservationControllerTest {
         time2.put("startAt", "11:00");
 
         RestAssured.given().contentType(ContentType.JSON)
+                .header("Cookie", cookie)
                 .body(time2)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
@@ -326,17 +327,19 @@ public class ReservationControllerTest {
         time3.put("startAt", "12:00");
 
         RestAssured.given().contentType(ContentType.JSON)
+                .header("Cookie", cookie)
                 .body(time3)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
     }
 
-    private void createDefaultThemes() {
+    private void createDefaultThemes(String cookie) {
         Map<String, Object> themeParams = new HashMap<>();
         themeParams.put("name", "이든의 공포 하우스");
         themeParams.put("description", "이든이 귀신으로 나옴");
         themeParams.put("imgUrl", "https://images.example.com/themes/horror-house.jpg");
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams)
                 .when().post("/api/v1/admin/themes")
@@ -348,6 +351,7 @@ public class ReservationControllerTest {
         themeParams2.put("imgUrl", "https://images.example.com/themes/jungkong-room.jpg");
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams2)
                 .when().post("/api/v1/admin/themes")
@@ -356,7 +360,6 @@ public class ReservationControllerTest {
 
     private Map<String, Object> reservationParams() {
         Map<String, Object> params = new HashMap<>();
-        params.put("name", "브라운");
         params.put("date", LocalDate.now().plusDays(1).toString());
         params.put("timeId", 1L);
         params.put("themeId", 1L);

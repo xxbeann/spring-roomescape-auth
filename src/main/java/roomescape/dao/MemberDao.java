@@ -19,6 +19,11 @@ public class MemberDao {
         return jdbcTemplate.queryForObject(sql, memberRowMapper, email);
     }
 
+    public Member findById(Long id) {
+        String sql = "SELECT * FROM member WHERE id = ?";
+        return jdbcTemplate.queryForObject(sql, memberRowMapper, id);
+    }
+
     private RowMapper<Member> memberRowMapper = (resultSet, rowNum) -> {
         Member member = new Member(
                 resultSet.getLong("id"),

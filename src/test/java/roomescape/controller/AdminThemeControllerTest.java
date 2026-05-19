@@ -11,15 +11,28 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class AdminThemeControllerTest {
 
+    private static final String INSERT_DEFAULT_MEMBER_SQL = """
+            INSERT INTO member (id, email, password, name)
+            VALUES (1, 'brown@email.com', 'password', '브라운');
+            """;
+
+    private static final String EMAIL = "brown@email.com";
+    private static final String PASSWORD = "password";
+
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 테마_생성시_성공하면_201을_반환한다() {
+        String cookie = authenticate();
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams())
                 .when().post("/api/v1/admin/themes")
@@ -35,8 +48,12 @@ public class AdminThemeControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 테마_삭제시_성공하면_204를_반환한다() {
+        String cookie = authenticate();
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams())
                 .when().post("/api/v1/admin/themes")
@@ -51,6 +68,7 @@ public class AdminThemeControllerTest {
                 .body("size()", is(1));
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .when().delete("/api/v1/admin/themes/1")
                 .then().log().all()
                 .statusCode(204);
@@ -63,8 +81,12 @@ public class AdminThemeControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 테마_삭제시_테마가_존재하지_않으면_404를_반환한다() {
+        String cookie = authenticate();
+
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams())
                 .when().post("/api/v1/admin/themes")
@@ -73,6 +95,7 @@ public class AdminThemeControllerTest {
                 .body("id", is(1));
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .when().delete("/api/v1/admin/themes/2")
                 .then().log().all()
                 .statusCode(404)
@@ -80,11 +103,15 @@ public class AdminThemeControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 테마_삭제시_예약이_존재하면_409를_반환한다() {
+        String cookie = authenticate();
+
         Map<String, String> time = new HashMap<>();
         time.put("startAt", "10:00");
 
         RestAssured.given().contentType(ContentType.JSON)
+                .header("Cookie", cookie)
                 .body(time)
                 .when().post("/api/v1/admin/times")
                 .then().log().all()
@@ -92,12 +119,14 @@ public class AdminThemeControllerTest {
                 .body("id", is(1));
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams())
                 .when().post("/api/v1/admin/themes")
                 .then().statusCode(201);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams())
                 .when().post("/api/v1/reservations")
@@ -105,6 +134,7 @@ public class AdminThemeControllerTest {
                 .body("id", is(1));
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .when().delete("/api/v1/admin/themes/1")
                 .then().log().all()
@@ -113,13 +143,17 @@ public class AdminThemeControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 테마_생성시_이름이_비어있으면_400을_반환한다() {
+        String cookie = authenticate();
+
         Map<String, Object> themeParams = new HashMap<>();
         themeParams.put("name", "");
         themeParams.put("description", "이든이 귀신으로 나옴");
         themeParams.put("imgUrl", "https://images.example.com/themes/horror-house.jpg");
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams)
                 .when().post("/api/v1/admin/themes")
@@ -129,19 +163,41 @@ public class AdminThemeControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 테마_생성시_imgUrl_형식이_잘못되면_400을_반환한다() {
+        String cookie = authenticate();
+
         Map<String, Object> themeParams = new HashMap<>();
         themeParams.put("name", "이든의 공포 하우스");
         themeParams.put("description", "이든이 귀신으로 나옴");
         themeParams.put("imgUrl", "링크~");
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams)
                 .when().post("/api/v1/admin/themes")
                 .then().log().all()
                 .statusCode(400)
                 .body("errorCode", is("COMMON400_001"));
+    }
+
+    @Test
+    void 비로그인_상태로_테마_생성시_401을_반환한다() {
+        RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .body(themeParams())
+                .when().post("/api/v1/admin/themes")
+                .then().log().all()
+                .statusCode(401);
+    }
+
+    @Test
+    void 비로그인_상태로_테마_삭제시_401을_반환한다() {
+        RestAssured.given().log().all()
+                .when().delete("/api/v1/admin/themes/1")
+                .then().log().all()
+                .statusCode(401);
     }
 
     private Map<String, Object> themeParams() {
@@ -154,10 +210,20 @@ public class AdminThemeControllerTest {
 
     private Map<String, Object> reservationParams() {
         Map<String, Object> params = new HashMap<>();
-        params.put("name", "브라운");
         params.put("date", LocalDate.now().plusDays(1).toString());
         params.put("timeId", 1L);
         params.put("themeId", 1L);
         return params;
+    }
+
+    private String authenticate() {
+        return RestAssured
+                .given()
+                .param("email", EMAIL)
+                .param("password", PASSWORD)
+                .when().post("/api/v1/auth/login")
+                .then()
+                .extract().header("Set-Cookie")
+                .split(";")[0];
     }
 }

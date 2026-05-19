@@ -10,12 +10,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class ReservationTimeControllerTest {
     private static final String AVAILABLE_TIME_TEST_DATE = "2099-05-05";
+
+    private static final String INSERT_DEFAULT_MEMBER_SQL = """
+            INSERT INTO member (id, email, password, name)
+            VALUES (1, 'brown@email.com', 'password', '브라운');
+            """;
+
+    private static final String EMAIL = "brown@email.com";
+    private static final String PASSWORD = "password";
 
     @Test
     void 예약시간_조회시_성공하면_200을_반환한다() {
@@ -27,11 +36,14 @@ public class ReservationTimeControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약가능시간_조회시_성공하면_200을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams())
                 .when().post("/api/v1/reservations")
@@ -50,11 +62,14 @@ public class ReservationTimeControllerTest {
     }
 
     @Test
+    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
     void 예약생성시_같은_날짜와_시간이어도_테마가_다르면_201을_반환한다() {
-        createDefaultTimes();
-        createDefaultThemes();
+        String cookie = authenticate();
+        createDefaultTimes(cookie);
+        createDefaultThemes(cookie);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams())
                 .when().post("/api/v1/reservations")
@@ -62,6 +77,7 @@ public class ReservationTimeControllerTest {
                 .statusCode(201);
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(reservationParams(Map.of("themeId", 2L)))
                 .when().post("/api/v1/reservations")
@@ -105,11 +121,23 @@ public class ReservationTimeControllerTest {
                 .body("errorCode", is("COMMON400_005"));
     }
 
-    private void createDefaultTimes() {
+    private String authenticate() {
+        return RestAssured
+                .given()
+                .param("email", EMAIL)
+                .param("password", PASSWORD)
+                .when().post("/api/v1/auth/login")
+                .then()
+                .extract().header("Set-Cookie")
+                .split(";")[0];
+    }
+
+    private void createDefaultTimes(String cookie) {
         Map<String, String> time = new HashMap<>();
         time.put("startAt", "10:00");
 
         RestAssured.given().contentType(ContentType.JSON)
+                .header("Cookie", cookie)
                 .body(time)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
@@ -118,6 +146,7 @@ public class ReservationTimeControllerTest {
         time2.put("startAt", "11:00");
 
         RestAssured.given().contentType(ContentType.JSON)
+                .header("Cookie", cookie)
                 .body(time2)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
@@ -126,17 +155,19 @@ public class ReservationTimeControllerTest {
         time3.put("startAt", "12:00");
 
         RestAssured.given().contentType(ContentType.JSON)
+                .header("Cookie", cookie)
                 .body(time3)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
     }
 
-    private void createDefaultThemes() {
+    private void createDefaultThemes(String cookie) {
         Map<String, Object> themeParams = new HashMap<>();
         themeParams.put("name", "이든의 공포 하우스");
         themeParams.put("description", "이든이 귀신으로 나옴");
         themeParams.put("imgUrl", "https://images.example.com/themes/horror-house.jpg");
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams)
                 .when().post("/api/v1/admin/themes")
@@ -148,6 +179,7 @@ public class ReservationTimeControllerTest {
         themeParams2.put("imgUrl", "https://images.example.com/themes/jungkong-room.jpg");
 
         RestAssured.given().log().all()
+                .header("Cookie", cookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams2)
                 .when().post("/api/v1/admin/themes")
@@ -156,7 +188,6 @@ public class ReservationTimeControllerTest {
 
     private Map<String, Object> reservationParams() {
         Map<String, Object> params = new HashMap<>();
-        params.put("name", "브라운");
         params.put("date", AVAILABLE_TIME_TEST_DATE);
         params.put("timeId", 1L);
         params.put("themeId", 1L);

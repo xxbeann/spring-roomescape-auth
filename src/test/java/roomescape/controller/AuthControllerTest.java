@@ -4,15 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import io.restassured.RestAssured;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
-import roomescape.domain.Member;
 
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
@@ -71,26 +68,64 @@ public class AuthControllerTest {
                 .body("errorCode", is("AUTH401_001"));
     }
 
-    @Disabled
     @Test
     @Sql(statements = INSERT_SINGLE_MEMBER_SQL)
-    void sessionLogin() {
+    void 로그인_쿠키로_현재_사용자_정보를_조회할_수_있다() {
         String cookie = RestAssured
                 .given().log().all()
                 .param(USERNAME_FIELD, EMAIL)
                 .param(PASSWORD_FIELD, PASSWORD)
                 .when().post("/api/v1/auth/login")
-                .then().log().all().extract().header("Set-Cookie").split(";")[0];
+                .then().log().all()
+                .statusCode(HttpStatus.OK.value())
+                .extract().header("Set-Cookie").split(";")[0];
 
-        Member member = RestAssured
+        RestAssured
                 .given().log().all()
                 .header("Cookie", cookie)
-                .accept(MediaType.APPLICATION_JSON_VALUE)
-                .when().get("/members/me/session")
+                .when().get("/api/v1/auth/me")
                 .then().log().all()
-                .statusCode(HttpStatus.OK.value()).extract().as(Member.class);
+                .statusCode(HttpStatus.OK.value())
+                .body("id", is(1))
+                .body("email", is(EMAIL))
+                .body("name", is(NAME));
+    }
 
-        assertThat(member.getEmail()).isEqualTo(EMAIL);
-        assertThat(member.getName()).isEqualTo(NAME);
+    @Test
+    void 비로그인_상태로_현재_사용자_정보를_조회하면_401을_반환한다() {
+        RestAssured
+                .given().log().all()
+                .when().get("/api/v1/auth/me")
+                .then().log().all()
+                .statusCode(HttpStatus.UNAUTHORIZED.value())
+                .body("errorCode", is("AUTH401_002"));
+    }
+
+    @Test
+    @Sql(statements = INSERT_SINGLE_MEMBER_SQL)
+    void 로그아웃하면_세션이_무효화되어_이후_요청에서_인증이_필요해진다() {
+        String cookie = RestAssured
+                .given().log().all()
+                .param(USERNAME_FIELD, EMAIL)
+                .param(PASSWORD_FIELD, PASSWORD)
+                .when().post("/api/v1/auth/login")
+                .then().log().all()
+                .statusCode(HttpStatus.OK.value())
+                .extract().header("Set-Cookie").split(";")[0];
+
+        RestAssured
+                .given().log().all()
+                .header("Cookie", cookie)
+                .when().post("/api/v1/auth/logout")
+                .then().log().all()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        RestAssured
+                .given().log().all()
+                .header("Cookie", cookie)
+                .when().get("/api/v1/auth/me")
+                .then().log().all()
+                .statusCode(HttpStatus.UNAUTHORIZED.value())
+                .body("errorCode", is("AUTH401_002"));
     }
 }

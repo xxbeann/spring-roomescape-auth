@@ -764,24 +764,41 @@
         <section class="section">
             <div class="section-header">
                 <h2 class="section-title">예약</h2>
-                <p class="section-copy">예약을 진행하거나, 예약자 이름으로 내 예약 목록을 확인하세요.</p>
+                <p class="section-copy">예약을 진행하거나 내 예약 목록을 확인하세요. 로그인이 필요합니다.</p>
             </div>
 
-            <div class="panel-tabs" role="tablist" aria-label="예약 패널">
+            <div id="authPanel" class="form">
+                <div id="loginForm">
+                    <div class="field">
+                        <label for="loginEmail">이메일</label>
+                        <input id="loginEmail" type="email" placeholder="예: brown@email.com" autocomplete="email">
+                    </div>
+                    <div class="field">
+                        <label for="loginPassword">비밀번호</label>
+                        <input id="loginPassword" type="password" placeholder="비밀번호" autocomplete="current-password">
+                    </div>
+                    <div class="button-row">
+                        <button id="loginButton" class="button primary" type="button">로그인</button>
+                    </div>
+                </div>
+                <div id="loggedInBar" class="hidden">
+                    <p class="helper">로그인된 상태입니다.</p>
+                    <div class="button-row">
+                        <button id="logoutButton" class="button secondary" type="button">로그아웃</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-tabs hidden" id="reservationTabs" role="tablist" aria-label="예약 패널">
                 <button id="reserveTabButton" class="panel-tab active" type="button" role="tab" aria-selected="true">예약하기</button>
                 <button id="lookupTabButton" class="panel-tab" type="button" role="tab" aria-selected="false">내 예약 조회</button>
             </div>
 
-            <div id="reservePanel" class="panel-view">
+            <div id="reservePanel" class="panel-view hidden">
                 <div class="form">
                     <div class="field">
                         <label for="reservationDate">예약 날짜</label>
                         <input id="reservationDate" type="date" required>
-                    </div>
-
-                    <div class="field">
-                        <label for="reservationName">예약자 이름</label>
-                        <input id="reservationName" type="text" maxlength="255" placeholder="예: 브라운">
                     </div>
 
                     <div class="button-row">
@@ -817,17 +834,12 @@
 
             <div id="lookupPanel" class="panel-view hidden">
                 <div class="form">
-                    <div class="field">
-                        <label for="reservationLookupName">예약자 이름</label>
-                        <input id="reservationLookupName" type="text" maxlength="255" placeholder="예: 브라운">
-                    </div>
-
                     <div class="button-row">
                         <button id="loadReservationsButton" class="button secondary" type="button">내 예약 조회</button>
                     </div>
 
                     <div id="reservationLookupList" class="reservation-list" aria-live="polite"></div>
-                    <p id="reservationLookupEmpty" class="empty">예약자 이름을 입력하고 조회해 주세요.</p>
+                    <p id="reservationLookupEmpty" class="empty">버튼을 눌러 내 예약 목록을 조회해 주세요.</p>
                 </div>
             </div>
         </section>
@@ -839,7 +851,8 @@
         themes: [],
         popularThemeProjections: [],
         selectedThemeId: null,
-        selectedTimeId: null
+        selectedTimeId: null,
+        loggedIn: false
     };
 
     const popularThemeList = document.getElementById("popularThemeList");
@@ -848,7 +861,6 @@
     const themeList = document.getElementById("themeList");
     const themeEmpty = document.getElementById("themeEmpty");
     const reservationDateInput = document.getElementById("reservationDate");
-    const reservationNameInput = document.getElementById("reservationName");
     const loadTimesButton = document.getElementById("loadTimesButton");
     const reserveButton = document.getElementById("reserveButton");
     const timeGrid = document.getElementById("timeGrid");
@@ -859,7 +871,6 @@
     const availabilityStat = document.getElementById("availabilityStat");
     const statusCard = document.getElementById("statusCard");
     const statusMessage = document.getElementById("statusMessage");
-    const reservationLookupNameInput = document.getElementById("reservationLookupName");
     const loadReservationsButton = document.getElementById("loadReservationsButton");
     const reservationLookupList = document.getElementById("reservationLookupList");
     const reservationLookupEmpty = document.getElementById("reservationLookupEmpty");
@@ -867,13 +878,36 @@
     const lookupTabButton = document.getElementById("lookupTabButton");
     const reservePanel = document.getElementById("reservePanel");
     const lookupPanel = document.getElementById("lookupPanel");
+    const reservationTabs = document.getElementById("reservationTabs");
+    const loginForm = document.getElementById("loginForm");
+    const loggedInBar = document.getElementById("loggedInBar");
+    const loginEmailInput = document.getElementById("loginEmail");
+    const loginPasswordInput = document.getElementById("loginPassword");
+    const loginButton = document.getElementById("loginButton");
+    const logoutButton = document.getElementById("logoutButton");
 
     document.addEventListener("DOMContentLoaded", () => {
         reservationDateInput.value = formatDate(new Date());
         bindEvents();
+        restoreAuthState();
         loadThemes();
         loadPopularThemes();
     });
+
+    async function restoreAuthState() {
+        try {
+            const response = await fetch("/api/v1/auth/me");
+            if (response.ok) {
+                state.loggedIn = true;
+            } else {
+                state.loggedIn = false;
+            }
+        } catch (error) {
+            state.loggedIn = false;
+        } finally {
+            renderAuthView();
+        }
+    }
 
     function bindEvents() {
         reserveTabButton.addEventListener("click", () => setActivePanel("reserve"));
@@ -881,6 +915,13 @@
         loadTimesButton.addEventListener("click", loadAvailableTimes);
         reserveButton.addEventListener("click", createReservation);
         loadReservationsButton.addEventListener("click", loadUserReservations);
+        loginButton.addEventListener("click", login);
+        logoutButton.addEventListener("click", logout);
+        loginPasswordInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                login();
+            }
+        });
 
         reservationDateInput.addEventListener("change", () => {
             clearSelectedTime();
@@ -893,6 +934,12 @@
     function setActivePanel(panel) {
         const isReserve = panel === "reserve";
 
+        if (!state.loggedIn) {
+            reservePanel.classList.add("hidden");
+            lookupPanel.classList.add("hidden");
+            return;
+        }
+
         reserveTabButton.classList.toggle("active", isReserve);
         reserveTabButton.setAttribute("aria-selected", String(isReserve));
         reservePanel.classList.toggle("hidden", !isReserve);
@@ -903,21 +950,23 @@
     }
 
     const userFriendlyErrorMessages = Object.freeze({
+        AUTH401_001: "이메일 또는 비밀번호가 일치하지 않습니다.",
+        AUTH401_002: "로그인이 필요합니다.",
         RESERVATION404_001: "요청한 예약을 찾을 수 없습니다. 예약 정보를 다시 확인해 주세요.",
         RESERVATION409_001: "이미 예약된 시간입니다. 다른 시간을 선택해 주세요.",
         RESERVATION400_001: "지나간 날짜와 시간은 예약할 수 없습니다. 다른 날짜나 시간을 선택해 주세요.",
         RESERVATION400_002: "이미 지난 예약은 취소할 수 없습니다.",
-        RESERVATION400_003: "본인 예약만 변경할 수 있습니다. 예약자 이름을 다시 확인해 주세요.",
+        RESERVATION400_003: "본인 예약만 변경/취소할 수 있습니다.",
         RESERVATION_TIME404_001: "선택한 예약 시간을 찾을 수 없습니다. 가능 시간을 다시 조회해 주세요.",
         RESERVATION_TIME409_001: "이미 예약이 존재하는 시간입니다. 다른 시간을 선택해 주세요.",
         THEME404_001: "선택한 테마를 찾을 수 없습니다. 테마를 다시 선택해 주세요.",
         THEME409_001: "이미 예약이 존재하는 테마는 삭제할 수 없습니다.",
-        COMMON400_001: "입력값이 올바르지 않습니다. 이름, 날짜, 예약 시간을 다시 확인해 주세요.",
+        COMMON400_001: "입력값이 올바르지 않습니다. 날짜와 예약 시간을 다시 확인해 주세요.",
         COMMON400_002: "요청 경로가 올바르지 않습니다. 다시 시도해 주세요.",
         COMMON400_003: "필요한 조회 조건이 빠졌습니다. 날짜와 테마를 다시 확인해 주세요.",
         COMMON400_004: "입력 형식이 올바르지 않습니다. 날짜와 시간 형식을 다시 확인해 주세요.",
         COMMON400_005: "조회 조건 형식이 올바르지 않습니다. 날짜 형식을 다시 확인해 주세요.",
-        COMMON400_006: "조회 조건 값이 올바르지 않습니다. 이름을 다시 확인해 주세요.",
+        COMMON400_006: "조회 조건 값이 올바르지 않습니다.",
         COMMON500_001: "문제가 발생했습니다. 잠시 후 다시 시도해 주세요."
     });
 
@@ -1106,11 +1155,8 @@
     }
 
     async function loadUserReservations() {
-        const userName = reservationLookupNameInput.value.trim();
-
-        if (!userName) {
-            setStatus("조회할 예약자 이름을 입력해 주세요.", "error");
-            reservationLookupNameInput.focus();
+        if (!state.loggedIn) {
+            setStatus("로그인이 필요합니다.", "error");
             return;
         }
 
@@ -1120,13 +1166,12 @@
         setStatus("예약 목록을 조회하는 중입니다.", "neutral");
 
         try {
-            const searchParams = new URLSearchParams({userName});
-            const response = await fetch(`/api/v1/reservations?${searchParams.toString()}`);
+            const response = await fetch("/api/v1/reservations");
             await ensureOk(response, "예약 목록을 불러오지 못했습니다.");
 
             const reservations = await response.json();
-            renderUserReservations(reservations, userName);
-            setStatus(`"${userName}"님의 예약 ${reservations.length}건을 조회했습니다.`, "success");
+            renderUserReservations(reservations);
+            setStatus(`내 예약 ${reservations.length}건을 조회했습니다.`, "success");
         } catch (error) {
             reservationLookupList.innerHTML = "";
             reservationLookupEmpty.textContent = error.message;
@@ -1135,11 +1180,11 @@
         }
     }
 
-    function renderUserReservations(reservations, userName) {
+    function renderUserReservations(reservations) {
         reservationLookupList.innerHTML = "";
 
         if (reservations.length === 0) {
-            reservationLookupEmpty.textContent = `"${userName}" 이름으로 조회된 예약이 없습니다.`;
+            reservationLookupEmpty.textContent = "조회된 예약이 없습니다.";
             reservationLookupEmpty.classList.remove("hidden");
             return;
         }
@@ -1160,20 +1205,19 @@
                     </div>
                 </div>
                 <div class="reservation-meta">
-                    <span>예약자: ${escapeHtml(reservation.name)}</span>
                     <span>날짜: ${escapeHtml(reservation.date)}</span>
                     <span>시간: ${escapeHtml(reservation.time.startAt)}</span>
                 </div>
             `;
             const editButton = card.querySelector(".reservation-edit-button");
             const cancelButton = card.querySelector(".reservation-cancel-button");
-            editButton.addEventListener("click", () => toggleReservationEditForm(reservation, userName, card));
-            cancelButton.addEventListener("click", () => cancelReservation(reservation.id, userName, cancelButton));
+            editButton.addEventListener("click", () => toggleReservationEditForm(reservation, card));
+            cancelButton.addEventListener("click", () => cancelReservation(reservation.id, cancelButton));
             reservationLookupList.appendChild(card);
         });
     }
 
-    function toggleReservationEditForm(reservation, userName, card) {
+    function toggleReservationEditForm(reservation, card) {
         const existingForm = card.querySelector(".reservation-edit-form");
 
         if (existingForm) {
@@ -1182,10 +1226,10 @@
         }
 
         reservationLookupList.querySelectorAll(".reservation-edit-form").forEach((form) => form.remove());
-        card.appendChild(createReservationEditForm(reservation, userName));
+        card.appendChild(createReservationEditForm(reservation));
     }
 
-    function createReservationEditForm(reservation, userName) {
+    function createReservationEditForm(reservation) {
         const form = document.createElement("div");
         form.className = "reservation-edit-form";
         form.innerHTML = `
@@ -1226,7 +1270,6 @@
         ));
         submitButton.addEventListener("click", () => updateReservation(
                 reservation.id,
-                userName,
                 dateInput.value,
                 selectedTimeId,
                 submitButton
@@ -1305,7 +1348,7 @@
         });
     }
 
-    async function updateReservation(reservationId, userName, date, timeId, button) {
+    async function updateReservation(reservationId, date, timeId, button) {
         if (!timeId) {
             setStatus("변경할 시간을 선택해 주세요.", "error");
             return;
@@ -1321,7 +1364,6 @@
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    name: userName,
                     date,
                     timeId
                 })
@@ -1343,7 +1385,7 @@
         }
     }
 
-    async function cancelReservation(reservationId, userName, button) {
+    async function cancelReservation(reservationId, button) {
         if (!window.confirm("이 예약을 취소할까요?")) {
             return;
         }
@@ -1364,7 +1406,7 @@
                 await loadAvailableTimes();
             }
 
-            setStatus(`"${userName}"님의 예약을 취소했습니다.`, "success");
+            setStatus("예약을 취소했습니다.", "success");
         } catch (error) {
             button.disabled = false;
             setStatus(error.message, "error");
@@ -1473,8 +1515,72 @@
         });
     }
 
+    async function login() {
+        const email = loginEmailInput.value.trim();
+        const password = loginPasswordInput.value;
+
+        if (!email || !password) {
+            setStatus("이메일과 비밀번호를 모두 입력해 주세요.", "error");
+            return;
+        }
+
+        loginButton.disabled = true;
+        setStatus("로그인 중입니다.", "neutral");
+
+        try {
+            const params = new URLSearchParams({email, password});
+            const response = await fetch("/api/v1/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: params.toString()
+            });
+
+            await ensureOk(response, "로그인에 실패했습니다.");
+
+            state.loggedIn = true;
+            loginPasswordInput.value = "";
+            renderAuthView();
+            setStatus("로그인되었습니다.", "success");
+        } catch (error) {
+            setStatus(error.message, "error");
+        } finally {
+            loginButton.disabled = false;
+        }
+    }
+
+    async function logout() {
+        try {
+            await fetch("/api/v1/auth/logout", {method: "POST"});
+        } catch (error) {
+            // 서버 호출 실패해도 클라이언트 상태는 초기화
+        }
+        state.loggedIn = false;
+        renderAuthView();
+        reservationLookupList.innerHTML = "";
+        reservationLookupEmpty.textContent = "버튼을 눌러 내 예약 목록을 조회해 주세요.";
+        reservationLookupEmpty.classList.remove("hidden");
+        setStatus("로그아웃되었습니다.", "neutral");
+    }
+
+    function renderAuthView() {
+        loginForm.classList.toggle("hidden", state.loggedIn);
+        loggedInBar.classList.toggle("hidden", !state.loggedIn);
+        reservationTabs.classList.toggle("hidden", !state.loggedIn);
+        if (state.loggedIn) {
+            setActivePanel("reserve");
+        } else {
+            reservePanel.classList.add("hidden");
+            lookupPanel.classList.add("hidden");
+        }
+    }
+
     async function createReservation() {
-        const name = reservationNameInput.value.trim();
+        if (!state.loggedIn) {
+            setStatus("로그인이 필요합니다.", "error");
+            return;
+        }
 
         if (!state.selectedThemeId) {
             setStatus("테마를 선택해 주세요.", "error");
@@ -1491,12 +1597,6 @@
             return;
         }
 
-        if (!name) {
-            setStatus("예약자 이름을 입력해 주세요.", "error");
-            reservationNameInput.focus();
-            return;
-        }
-
         reserveButton.disabled = true;
         setStatus("예약을 생성하는 중입니다.", "neutral");
 
@@ -1507,7 +1607,6 @@
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    name,
                     date: reservationDateInput.value,
                     timeId: state.selectedTimeId,
                     themeId: state.selectedThemeId
@@ -1517,7 +1616,6 @@
             await ensureOk(response, "예약 생성에 실패했습니다.");
 
             const createdReservation = await response.json();
-            reservationNameInput.value = "";
             setStatus(`예약이 완료되었습니다. 예약 번호는 ${createdReservation.id}입니다.`, "success");
             await loadAvailableTimes();
             await loadPopularThemes();

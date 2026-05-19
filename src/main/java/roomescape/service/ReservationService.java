@@ -31,19 +31,16 @@ public class ReservationService {
         this.reservationTimeDao = reservationTimeDao;
     }
 
-    public List<Reservation> getReservations(String userName) {
-        if (userName == null) {
-            return reservationDao.findAllReservations();
-        }
-        return reservationDao.findAllReservationsByUserName(userName);
+    public List<Reservation> getReservations(Long memberId) {
+        return reservationDao.findAllReservationsByMemberId(memberId);
     }
 
     @Transactional
-    public Reservation createReservation(String name, LocalDate date, Long timeId, Long themeId) {
+    public Reservation createReservation(Long memberId, LocalDate date, Long timeId, Long themeId) {
         LocalTime startAt = reservationTimeDao.findReservationTimeById(timeId).getStartAt();
         validatePastReservationCreate(date, startAt);
         try {
-            Long id = reservationDao.insertWithKeyHolder(name, date, timeId, themeId);
+            Long id = reservationDao.insertWithKeyHolder(memberId, date, timeId, themeId);
             return reservationDao.findReservationById(id);
         } catch (DuplicateKeyException e) {
             throw new ReservationAlreadyExistsException();
@@ -51,16 +48,17 @@ public class ReservationService {
     }
 
     @Transactional
-    public void deleteReservation(Long id) {
+    public void deleteReservation(Long id, Long memberId) {
         Reservation reservation = findReservation(id);
+        validateReservationOwner(memberId, reservation);
         validatePastReservationCancel(reservation.getDate(), reservation.getTime().getStartAt());
         reservationDao.delete(id);
     }
 
     @Transactional
-    public Reservation updateReservation(Long id, LocalDate date, String name, Long timeId) {
+    public Reservation updateReservation(Long id, LocalDate date, Long memberId, Long timeId) {
         ReservationTime reservationTime = findReservationTime(timeId);
-        validateReservationOwnerName(name, findReservation(id));
+        validateReservationOwner(memberId, findReservation(id));
         validatePastReservationCreate(date, reservationTime.getStartAt());
         try {
             reservationDao.updateById(id, date, timeId);
@@ -70,8 +68,8 @@ public class ReservationService {
         return reservationDao.findReservationById(id);
     }
 
-    private void validateReservationOwnerName(String name, Reservation reservation) {
-        if (!reservation.getName().equals(name)) {
+    private void validateReservationOwner(Long memberId, Reservation reservation) {
+        if (!reservation.getMemberId().equals(memberId)) {
             throw new ReservationOwnerMismatchException();
         }
     }

@@ -34,10 +34,16 @@ public class ReservationDaoTest {
                     'https://images.example.com/themes/horror-house.jpg');
             """;
 
+    private static final String INSERT_TWO_MEMBERS_SQL = """
+            INSERT INTO member (id, email, password, name)
+            VALUES (1, 'brown@email.com', 'password', '브라운'),
+                   (2, 'jeongkong@email.com', 'password', '정콩이');
+            """;
+
     private static final String INSERT_TWO_RESERVATIONS_SQL = """
-            INSERT INTO reservation (id, name, date, time_id, theme_id)
-            VALUES (1, '브라운', '2026-05-01', 1, 1),
-                   (2, '정콩이', '2026-05-02', 2, 1);
+            INSERT INTO reservation (id, member_id, date, time_id, theme_id)
+            VALUES (1, 1, '2026-05-01', 1, 1),
+                   (2, 2, '2026-05-02', 2, 1);
             """;
 
     @Autowired
@@ -47,6 +53,7 @@ public class ReservationDaoTest {
     @Sql(statements = {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
+            INSERT_TWO_MEMBERS_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void 모든_예약을_조회한다() {
@@ -56,15 +63,15 @@ public class ReservationDaoTest {
         assertThat(reservations)
                 .extracting(
                         Reservation::getId,
-                        Reservation::getName,
+                        Reservation::getMemberId,
                         Reservation::getDate,
                         reservation -> reservation.getTime().getId(),
                         reservation -> reservation.getTime().getStartAt(),
                         Reservation::getThemeId
                 )
                 .containsExactlyInAnyOrder(
-                        tuple(1L, "브라운", LocalDate.of(2026, 5, 1), 1L, LocalTime.of(10, 0), 1L),
-                        tuple(2L, "정콩이", LocalDate.of(2026, 5, 2), 2L, LocalTime.of(11, 0), 1L)
+                        tuple(1L, 1L, LocalDate.of(2026, 5, 1), 1L, LocalTime.of(10, 0), 1L),
+                        tuple(2L, 2L, LocalDate.of(2026, 5, 2), 2L, LocalTime.of(11, 0), 1L)
                 );
     }
 
@@ -72,21 +79,22 @@ public class ReservationDaoTest {
     @Sql(statements = {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
+            INSERT_TWO_MEMBERS_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
-    void 사용자_이름으로_예약을_조회한다() {
-        List<Reservation> reservations = reservationDao.findAllReservationsByUserName("브라운");
+    void memberId로_예약을_조회한다() {
+        List<Reservation> reservations = reservationDao.findAllReservationsByMemberId(1L);
 
         assertThat(reservations).hasSize(1);
         assertThat(reservations)
                 .extracting(
-                        Reservation::getName,
+                        Reservation::getMemberId,
                         Reservation::getDate,
                         reservation -> reservation.getTime().getId(),
                         reservation -> reservation.getTime().getStartAt()
                 )
                 .containsExactlyInAnyOrder(
-                        tuple("브라운", LocalDate.of(2026, 5, 1), 1L, LocalTime.of(10, 0))
+                        tuple(1L, LocalDate.of(2026, 5, 1), 1L, LocalTime.of(10, 0))
                 );
     }
 
@@ -94,6 +102,7 @@ public class ReservationDaoTest {
     @Sql(statements = {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
+            INSERT_TWO_MEMBERS_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void ID에_해당하는_예약을_조회한다() {
@@ -102,7 +111,7 @@ public class ReservationDaoTest {
         assertThat(reservation)
                 .extracting(
                         Reservation::getId,
-                        Reservation::getName,
+                        Reservation::getMemberId,
                         Reservation::getDate,
                         reservationTime -> reservationTime.getTime().getId(),
                         reservationTime -> reservationTime.getTime().getStartAt(),
@@ -110,7 +119,7 @@ public class ReservationDaoTest {
                 )
                 .containsExactly(
                         1L,
-                        "브라운",
+                        1L,
                         LocalDate.of(2026, 5, 1),
                         1L,
                         LocalTime.of(10, 0),
@@ -122,6 +131,7 @@ public class ReservationDaoTest {
     @Sql(statements = {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
+            INSERT_TWO_MEMBERS_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void 예약을_수정한다() {
@@ -133,7 +143,7 @@ public class ReservationDaoTest {
         assertThat(updatedReservation)
                 .extracting(
                         Reservation::getId,
-                        Reservation::getName,
+                        Reservation::getMemberId,
                         Reservation::getDate,
                         reservation -> reservation.getTime().getId(),
                         reservation -> reservation.getTime().getStartAt(),
@@ -141,7 +151,7 @@ public class ReservationDaoTest {
                 )
                 .containsExactly(
                         1L,
-                        "브라운",
+                        1L,
                         LocalDate.of(2026, 5, 3),
                         2L,
                         LocalTime.of(11, 0),
@@ -152,11 +162,12 @@ public class ReservationDaoTest {
     @Test
     @Sql(statements = {
             INSERT_THREE_TIMES_SQL,
-            INSERT_SINGLE_THEME_SQL
+            INSERT_SINGLE_THEME_SQL,
+            INSERT_TWO_MEMBERS_SQL
     })
     void 예약을_추가한다() {
         Long id = reservationDao.insertWithKeyHolder(
-                "브라운",
+                1L,
                 LocalDate.of(2026, 5, 1),
                 1L,
                 1L
@@ -169,7 +180,7 @@ public class ReservationDaoTest {
         assertThat(reservation)
                 .extracting(
                         Reservation::getId,
-                        Reservation::getName,
+                        Reservation::getMemberId,
                         Reservation::getDate,
                         reservationTime -> reservationTime.getTime().getId(),
                         reservationTime -> reservationTime.getTime().getStartAt(),
@@ -177,7 +188,7 @@ public class ReservationDaoTest {
                 )
                 .containsExactly(
                         id,
-                        "브라운",
+                        1L,
                         LocalDate.of(2026, 5, 1),
                         1L,
                         LocalTime.of(10, 0),
@@ -189,6 +200,7 @@ public class ReservationDaoTest {
     @Sql(statements = {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
+            INSERT_TWO_MEMBERS_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void 예약을_삭제한다() {
@@ -203,11 +215,12 @@ public class ReservationDaoTest {
     @Sql(statements = {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
+            INSERT_TWO_MEMBERS_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void 같은_날짜_시간_테마의_예약을_추가하면_예외가_발생한다() {
         assertThatThrownBy(() -> reservationDao.insertWithKeyHolder(
-                "정콩이",
+                2L,
                 LocalDate.of(2026, 5, 1),
                 1L,
                 1L

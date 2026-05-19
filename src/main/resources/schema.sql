@@ -14,19 +14,6 @@ CREATE TABLE theme
     PRIMARY KEY (id)
 );
 
-CREATE TABLE reservation
-(
-    id       BIGINT       NOT NULL AUTO_INCREMENT,
-    name     VARCHAR(255) NOT NULL,
-    date     VARCHAR(255) NOT NULL,
-    time_id  BIGINT       NOT NULL,
-    theme_id BIGINT       NOT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (time_id) REFERENCES reservation_time (id),
-    FOREIGN KEY (theme_id) REFERENCES theme (id),
-    CONSTRAINT uq_reservation_date_time_theme UNIQUE (date, time_id, theme_id)
-);
-
 CREATE TABLE member
 (
     id       BIGINT       NOT NULL AUTO_INCREMENT,
@@ -35,4 +22,18 @@ CREATE TABLE member
     name     VARCHAR(255) NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT uq_member_email UNIQUE (email)
+);
+
+CREATE TABLE reservation
+(
+    id        BIGINT       NOT NULL AUTO_INCREMENT,
+    member_id BIGINT       NOT NULL,
+    date      VARCHAR(255) NOT NULL,
+    time_id   BIGINT       NOT NULL,
+    theme_id  BIGINT       NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (member_id) REFERENCES member (id),
+    FOREIGN KEY (time_id) REFERENCES reservation_time (id),
+    FOREIGN KEY (theme_id) REFERENCES theme (id),
+    CONSTRAINT uq_reservation_date_time_theme UNIQUE (date, time_id, theme_id)
 );

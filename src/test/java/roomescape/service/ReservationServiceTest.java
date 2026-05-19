@@ -23,6 +23,9 @@ import roomescape.exception.ReservationTimeNotFoundException;
 
 public class ReservationServiceTest {
 
+    private static final Long BROWN_ID = 1L;
+    private static final Long JEONGKONG_ID = 2L;
+
     private ReservationDao reservationDao;
     private ReservationTimeDao reservationTimeDao;
     private ReservationService reservationService;
@@ -39,7 +42,7 @@ public class ReservationServiceTest {
         when(reservationDao.findReservationById(3L))
                 .thenThrow(new EmptyResultDataAccessException(1));
 
-        assertThatThrownBy(() -> reservationService.deleteReservation(3L))
+        assertThatThrownBy(() -> reservationService.deleteReservation(3L, BROWN_ID))
                 .isInstanceOf(ReservationNotFoundException.class);
     }
 
@@ -51,10 +54,10 @@ public class ReservationServiceTest {
                         1L,
                         LocalTime.of(10, 0)
                 ));
-        when(reservationDao.insertWithKeyHolder("정콩이", futureDate, 1L, 1L))
+        when(reservationDao.insertWithKeyHolder(JEONGKONG_ID, futureDate, 1L, 1L))
                 .thenThrow(new DuplicateKeyException("Duplicate key exception"));
 
-        assertThatThrownBy(() -> reservationService.createReservation("정콩이", futureDate, 1L, 1L))
+        assertThatThrownBy(() -> reservationService.createReservation(JEONGKONG_ID, futureDate, 1L, 1L))
                 .isInstanceOf(ReservationAlreadyExistsException.class);
     }
 
@@ -65,7 +68,7 @@ public class ReservationServiceTest {
                         1L,
                         LocalTime.of(10, 0)
                 ));
-        assertThatThrownBy(() -> reservationService.createReservation("정콩이", LocalDate.of(2025, 1, 1), 1L, 1L))
+        assertThatThrownBy(() -> reservationService.createReservation(JEONGKONG_ID, LocalDate.of(2025, 1, 1), 1L, 1L))
                 .isInstanceOf(PastReservationNotAllowedException.class);
     }
 
@@ -75,17 +78,17 @@ public class ReservationServiceTest {
         when(reservationDao.findReservationById(1L))
                 .thenReturn(new Reservation(
                         1L,
-                        "정콩이",
+                        JEONGKONG_ID,
                         pastDate,
                         new ReservationTime(1L, LocalTime.of(10, 0)),
                         1L
                 ));
-        assertThatThrownBy(() -> reservationService.deleteReservation(1L))
+        assertThatThrownBy(() -> reservationService.deleteReservation(1L, JEONGKONG_ID))
                 .isInstanceOf(PastReservationCancelNotAllowedException.class);
     }
 
     @Test
-    void 예약자_이름이_일치하지_않으면_예약을_변경할_수_없다() {
+    void 예약자가_일치하지_않으면_예약을_변경할_수_없다() {
         Long reservationId = 1L;
         Long timeId = 2L;
         LocalDate futureDate = LocalDate.now().plusDays(1);
@@ -98,7 +101,7 @@ public class ReservationServiceTest {
         when(reservationDao.findReservationById(reservationId))
                 .thenReturn(new Reservation(
                         reservationId,
-                        "브라운",
+                        BROWN_ID,
                         futureDate,
                         new ReservationTime(1L, LocalTime.of(10, 0)),
                         1L
@@ -107,7 +110,7 @@ public class ReservationServiceTest {
         assertThatThrownBy(() -> reservationService.updateReservation(
                 reservationId,
                 futureDate,
-                "정콩이",
+                JEONGKONG_ID,
                 timeId
         )).isInstanceOf(ReservationOwnerMismatchException.class);
     }
@@ -124,7 +127,7 @@ public class ReservationServiceTest {
         assertThatThrownBy(() -> reservationService.updateReservation(
                 reservationId,
                 futureDate,
-                "브라운",
+                BROWN_ID,
                 timeId
         )).isInstanceOf(ReservationTimeNotFoundException.class);
     }
@@ -143,7 +146,7 @@ public class ReservationServiceTest {
         when(reservationDao.findReservationById(reservationId))
                 .thenReturn(new Reservation(
                         reservationId,
-                        "브라운",
+                        BROWN_ID,
                         futureDate,
                         new ReservationTime(1L, LocalTime.of(10, 0)),
                         1L
@@ -154,7 +157,7 @@ public class ReservationServiceTest {
         assertThatThrownBy(() -> reservationService.updateReservation(
                 reservationId,
                 futureDate,
-                "브라운",
+                BROWN_ID,
                 timeId
         )).isInstanceOf(ReservationAlreadyExistsException.class);
     }
@@ -176,7 +179,7 @@ public class ReservationServiceTest {
         assertThatThrownBy(() -> reservationService.updateReservation(
                 reservationId,
                 futureDate,
-                "브라운",
+                BROWN_ID,
                 timeId
         )).isInstanceOf(ReservationNotFoundException.class);
     }
@@ -195,7 +198,7 @@ public class ReservationServiceTest {
         when(reservationDao.findReservationById(reservationId))
                 .thenReturn(new Reservation(
                         reservationId,
-                        "브라운",
+                        BROWN_ID,
                         LocalDate.now().plusDays(1),
                         new ReservationTime(1L, LocalTime.of(10, 0)),
                         1L
@@ -204,7 +207,7 @@ public class ReservationServiceTest {
         assertThatThrownBy(() -> reservationService.updateReservation(
                 reservationId,
                 pastDate,
-                "브라운",
+                BROWN_ID,
                 timeId
         )).isInstanceOf(PastReservationNotAllowedException.class);
     }

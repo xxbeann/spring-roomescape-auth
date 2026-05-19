@@ -25,7 +25,7 @@ public class ReservationDao {
         String sql = """
                 SELECT
                     r.id as reservation_id,
-                    r.name,
+                    r.member_id,
                     r.date,
                     t.id as time_id,
                     t.start_at,
@@ -40,11 +40,11 @@ public class ReservationDao {
         return reservations;
     }
 
-    public List<Reservation> findAllReservationsByUserName(String userName) {
+    public List<Reservation> findAllReservationsByMemberId(Long memberId) {
         String sql = """
                 SELECT
                     r.id as reservation_id,
-                    r.name,
+                    r.member_id,
                     r.date,
                     t.id as time_id,
                     t.start_at,
@@ -52,12 +52,12 @@ public class ReservationDao {
                 FROM reservation as r
                 INNER JOIN reservation_time as t
                   ON r.time_id = t.id
-                WHERE r.name = ?
+                WHERE r.member_id = ?
                 """;
         List<Reservation> reservations = jdbcTemplate.query(
                 sql,
                 reservationRowMapper(),
-                userName
+                memberId
         );
         return reservations;
     }
@@ -66,7 +66,7 @@ public class ReservationDao {
         String sql = """
                 SELECT
                     r.id as reservation_id,
-                    r.name,
+                    r.member_id,
                     r.date,
                     t.id as time_id,
                     t.start_at,
@@ -87,8 +87,8 @@ public class ReservationDao {
         return jdbcTemplate.update(sql, date.toString(), timeId, id);
     }
 
-    public Long insertWithKeyHolder(String name, LocalDate date, Long timeId, Long themeId) {
-        String sql = "insert into reservation (name, date, time_id, theme_id) values (?, ?, ?, ?)";
+    public Long insertWithKeyHolder(Long memberId, LocalDate date, Long timeId, Long themeId) {
+        String sql = "insert into reservation (member_id, date, time_id, theme_id) values (?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -96,7 +96,7 @@ public class ReservationDao {
                     sql,
                     new String[]{"id"}
             );
-            ps.setString(1, name);
+            ps.setLong(1, memberId);
             ps.setString(2, date.toString());
             ps.setLong(3, timeId);
             ps.setLong(4, themeId);
@@ -114,7 +114,7 @@ public class ReservationDao {
         return (resultSet, rowNum) -> {
             Reservation newReservation = new Reservation(
                     resultSet.getLong("reservation_id"),
-                    resultSet.getString("name"),
+                    resultSet.getLong("member_id"),
                     LocalDate.parse(resultSet.getString("date")),
                     new ReservationTime(
                             resultSet.getLong("time_id"),
