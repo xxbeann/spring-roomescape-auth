@@ -57,7 +57,7 @@ public class Theme {
             URI uri = new URI(imgUrl);
             String scheme = uri.getScheme();
 
-            if (uri.getHost() == null || (!"http".equals(scheme) && !"https".equals(scheme))) {
+            if (uri.getHost() == null || (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme))) {
                 throw new IllegalArgumentException("올바른 URL 형식이 아닙니다.");
             }
         } catch (URISyntaxException e) {

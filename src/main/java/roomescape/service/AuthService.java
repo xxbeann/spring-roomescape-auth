@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import roomescape.dao.MemberDao;
 import roomescape.domain.Member;
 import roomescape.exception.AuthenticationException;
+import roomescape.exception.UnauthorizedException;
 
 @Service
 @Transactional(readOnly = true)
@@ -31,6 +32,10 @@ public class AuthService {
     }
 
     public Member findCurrentMember(Long memberId) {
-        return memberDao.findById(memberId);
+        try {
+            return memberDao.findById(memberId);
+        } catch (EmptyResultDataAccessException e) {
+            throw new UnauthorizedException();
+        }
     }
 }

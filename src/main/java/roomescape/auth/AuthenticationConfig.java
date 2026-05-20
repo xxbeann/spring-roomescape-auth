@@ -10,14 +10,14 @@ public class AuthenticationConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LoginCheckInterceptor())
-                .addPathPatterns(
-                        "/api/v1/reservations/**",
-                        "/api/v1/admin/**",
-                        "/api/v1/auth/me"
-                )
+                .addPathPatterns("/api/**")
                 .excludePathPatterns(
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/logout",
+                        "/api/v1/themes",
+                        "/api/v1/themes/popular",
                         "/api/v1/reservations/times",
-                        "/api/v1/reservations/times/**"
+                        "/api/v1/reservations/times/availability"
                 );
     }
 }

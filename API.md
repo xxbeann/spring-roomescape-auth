@@ -21,8 +21,10 @@
 
 | 분류 | API |
 | --- | --- |
-| **공개** | `POST /api/v1/auth/login`, `GET /api/v1/themes`, `GET /api/v1/themes/popular`, `GET /api/v1/reservations/times`, `GET /api/v1/reservations/times/availability` |
-| **인증 필요** | `GET /api/v1/auth/me`, `POST /api/v1/auth/logout`, `GET/POST/PATCH/DELETE /api/v1/reservations/**`, `POST/DELETE /api/v1/admin/themes/**`, `POST/DELETE /api/v1/admin/times/**` |
+| **공개** | `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`, `GET /api/v1/themes`, `GET /api/v1/themes/popular`, `GET /api/v1/reservations/times`, `GET /api/v1/reservations/times/availability` |
+| **인증 필요** | `GET /api/v1/auth/me`, `GET /api/v1/reservations`, `POST /api/v1/reservations`, `PATCH /api/v1/reservations/{id}`, `DELETE /api/v1/reservations/{id}`, `POST /api/v1/admin/themes`, `DELETE /api/v1/admin/themes/{id}`, `POST /api/v1/admin/times`, `DELETE /api/v1/admin/times/{id}` |
+
+> 실제 인증 적용은 `AuthenticationConfig`의 인터셉터 등록 규칙(`addPathPatterns` + `excludePathPatterns`)을 따른다. 보호 영역(`/api/v1/reservations/**`, `/api/v1/admin/**`, `/api/v1/auth/me`)에서 `/api/v1/reservations/times`와 그 하위는 공개로 예외 처리된다.
 
 ## 공통 에러 응답
 
