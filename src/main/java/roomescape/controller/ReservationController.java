@@ -1,6 +1,6 @@
 package roomescape.controller;
 
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -13,27 +13,30 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import roomescape.auth.JwtTokenProvider;
+import roomescape.auth.TokenExtractor;
 import roomescape.domain.Reservation;
 import roomescape.dto.request.ReservationCreateRequest;
 import roomescape.dto.request.ReservationUpdateRequest;
 import roomescape.dto.response.ReservationResponse;
+import roomescape.exception.UnauthorizedException;
 import roomescape.service.ReservationService;
 
 @RequestMapping("/api/v1/reservations")
 @RestController
 public class ReservationController {
 
-    private static final String SESSION_KEY = "USER";
-
+    private final JwtTokenProvider jwtTokenProvider;
     private final ReservationService reservationService;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(JwtTokenProvider jwtTokenProvider, ReservationService reservationService) {
+        this.jwtTokenProvider = jwtTokenProvider;
         this.reservationService = reservationService;
     }
 
     @GetMapping
-    public ResponseEntity<List<ReservationResponse>> getReservations(HttpSession session) {
-        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+    public ResponseEntity<List<ReservationResponse>> getReservations(HttpServletRequest request) {
+        Long memberId = extractMemberId(request);
 
         List<Reservation> reservations = reservationService.getReservations(memberId);
         List<ReservationResponse> reservationResponses = ReservationResponse.fromAll(reservations);
@@ -43,8 +46,8 @@ public class ReservationController {
     @PostMapping
     public ResponseEntity<ReservationResponse> createReservation(
             @Valid @RequestBody ReservationCreateRequest reservationCreateRequest,
-            HttpSession session) {
-        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+            HttpServletRequest request) {
+        Long memberId = extractMemberId(request);
 
         Reservation savedReservation = reservationService.createReservation(
                 memberId,
@@ -61,8 +64,8 @@ public class ReservationController {
     public ResponseEntity<ReservationResponse> updateReservation(
             @PathVariable Long id,
             @Valid @RequestBody ReservationUpdateRequest reservationUpdateRequest,
-            HttpSession session) {
-        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+            HttpServletRequest request) {
+        Long memberId = extractMemberId(request);
 
         Reservation updatedReservation = reservationService.updateReservation(
                 id,
@@ -75,10 +78,18 @@ public class ReservationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteReservation(@PathVariable Long id, HttpSession session) {
-        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+    public ResponseEntity<Void> deleteReservation(@PathVariable Long id, HttpServletRequest request) {
+        Long memberId = extractMemberId(request);
 
         reservationService.deleteReservation(id, memberId);
         return ResponseEntity.noContent().build();
+    }
+
+    private Long extractMemberId(HttpServletRequest request) {
+        String token = TokenExtractor.extract(request);
+        if (token == null) {
+            throw new UnauthorizedException();
+        }
+        return jwtTokenProvider.getMemberId(token);
     }
 }

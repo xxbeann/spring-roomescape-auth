@@ -7,12 +7,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class AuthenticationConfig implements WebMvcConfigurer {
 
+    private final LoginCheckInterceptor loginCheckInterceptor;
+
+    public AuthenticationConfig(LoginCheckInterceptor loginCheckInterceptor) {
+        this.loginCheckInterceptor = loginCheckInterceptor;
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new LoginCheckInterceptor())
+        registry.addInterceptor(loginCheckInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
                         "/api/v1/auth/login",
+                        "/api/v1/auth/login/token",
                         "/api/v1/auth/logout",
                         "/api/v1/themes",
                         "/api/v1/themes/popular",

@@ -24,7 +24,9 @@ public enum ErrorType {
     THEME_IN_USE(HttpStatus.CONFLICT, "THEME409_001", "예약이 존재하는 테마는 삭제할 수 없습니다."),
 
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH401_001", "이메일 또는 비밀번호가 일치하지 않습니다."),
-    AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH401_002", "로그인이 필요한 요청입니다.");
+    AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH401_002", "로그인이 필요한 요청입니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH401_003", "유효하지 않은 토큰입니다."),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH401_004", "토큰이 만료되었습니다. 다시 로그인해 주세요.");
 
     private final HttpStatus httpStatus;
     private final String errorCode;

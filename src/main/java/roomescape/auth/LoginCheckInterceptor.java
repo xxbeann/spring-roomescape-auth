@@ -2,13 +2,18 @@ package roomescape.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import roomescape.exception.UnauthorizedException;
 
+@Component
 public class LoginCheckInterceptor implements HandlerInterceptor {
 
-    private static final String SESSION_KEY = "USER";
+    private final JwtTokenProvider jwtTokenProvider;
+
+    public LoginCheckInterceptor(JwtTokenProvider jwtTokenProvider) {
+        this.jwtTokenProvider = jwtTokenProvider;
+    }
 
     @Override
     public boolean preHandle(
@@ -16,10 +21,11 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             HttpServletResponse response,
             Object handler
     ) {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute(SESSION_KEY) == null) {
+        String token = TokenExtractor.extract(request);
+        if (token == null) {
             throw new UnauthorizedException();
         }
+        jwtTokenProvider.validateToken(token);
         return true;
     }
 }

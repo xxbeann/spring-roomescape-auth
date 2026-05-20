@@ -7,6 +7,7 @@ import io.restassured.http.ContentType;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,136 +29,162 @@ public class AdminReservationTimeControllerTest {
     private static final String EMAIL = "brown@email.com";
     private static final String PASSWORD = "password";
 
-    @Test
-    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
-    void 예약시간_생성시_성공하면_201을_반환한다() {
-        String cookie = authenticate();
+    @Nested
+    class 예약시간_생성 {
 
-        RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
-                .body(timeParams())
-                .when().post("/api/v1/admin/times")
-                .then().log().all()
-                .statusCode(201)
-                .body("id", is(1));
+        @Test
+        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        void 성공하면_201을_반환한다() {
+            String cookie = authenticate();
+
+            RestAssured.given().contentType(ContentType.JSON)
+                    .header("Cookie", cookie)
+                    .body(timeParams())
+                    .when().post("/api/v1/admin/times")
+                    .then().log().all()
+                    .statusCode(201)
+                    .body("id", is(1));
+        }
+
+        @Test
+        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        void startAt이_누락되면_400을_반환한다() {
+            String cookie = authenticate();
+
+            RestAssured.given().contentType(ContentType.JSON)
+                    .header("Cookie", cookie)
+                    .body("{}")
+                    .when().post("/api/v1/admin/times")
+                    .then().log().all()
+                    .statusCode(400)
+                    .body("errorCode", is("COMMON400_001"));
+        }
+
+        @Test
+        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        void 시작시간_형식이_잘못되면_400을_반환한다() {
+            String cookie = authenticate();
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("startAt", "10:00:00");
+
+            RestAssured.given().contentType(ContentType.JSON)
+                    .header("Cookie", cookie)
+                    .body(params)
+                    .when().post("/api/v1/admin/times")
+                    .then().log().all()
+                    .statusCode(400)
+                    .body("errorCode", is("COMMON400_004"));
+        }
     }
 
-    @Test
-    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
-    void 예약시간_삭제시_성공하면_204를_반환한다() {
-        String cookie = authenticate();
+    @Nested
+    class 예약시간_삭제 {
 
-        RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
-                .body(timeParams())
-                .when().post("/api/v1/admin/times")
-                .then().log().all()
-                .statusCode(201)
-                .body("id", is(1));
+        @Test
+        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        void 성공하면_204를_반환한다() {
+            String cookie = authenticate();
 
-        RestAssured.given().log().all()
-                .when().get("/api/v1/reservations/times")
-                .then().log().all()
-                .statusCode(200)
-                .body("size()", is(1));
+            RestAssured.given().contentType(ContentType.JSON)
+                    .header("Cookie", cookie)
+                    .body(timeParams())
+                    .when().post("/api/v1/admin/times")
+                    .then().log().all()
+                    .statusCode(201)
+                    .body("id", is(1));
 
-        RestAssured.given().log().all()
-                .header("Cookie", cookie)
-                .when().delete("/api/v1/admin/times/1")
-                .then().log().all()
-                .statusCode(204);
+            RestAssured.given().log().all()
+                    .when().get("/api/v1/reservations/times")
+                    .then().log().all()
+                    .statusCode(200)
+                    .body("size()", is(1));
 
-        RestAssured.given().log().all()
-                .when().get("/api/v1/reservations/times")
-                .then().log().all()
-                .statusCode(200)
-                .body("size()", is(0));
+            RestAssured.given().log().all()
+                    .header("Cookie", cookie)
+                    .when().delete("/api/v1/admin/times/1")
+                    .then().log().all()
+                    .statusCode(204);
+
+            RestAssured.given().log().all()
+                    .when().get("/api/v1/reservations/times")
+                    .then().log().all()
+                    .statusCode(200)
+                    .body("size()", is(0));
+        }
+
+        @Test
+        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        void 존재하지_않는_예약시간이면_404를_반환한다() {
+            String cookie = authenticate();
+            createDefaultTimes(cookie);
+
+            RestAssured.given().log().all()
+                    .header("Cookie", cookie)
+                    .when().delete("/api/v1/admin/times/4")
+                    .then().log().all()
+                    .statusCode(404)
+                    .body("errorCode", is("RESERVATION_TIME404_001"));
+        }
+
+        @Test
+        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        void 예약이_존재하면_409를_반환한다() {
+            String cookie = authenticate();
+            createDefaultTimes(cookie);
+            createDefaultThemes(cookie);
+
+            RestAssured.given().log().all()
+                    .header("Cookie", cookie)
+                    .contentType(ContentType.JSON)
+                    .body(reservationParams())
+                    .when().post("/api/v1/reservations")
+                    .then().log().all()
+                    .statusCode(201)
+                    .body("id", is(1));
+
+            RestAssured.given().log().all()
+                    .header("Cookie", cookie)
+                    .when().delete("/api/v1/admin/times/1")
+                    .then().log().all()
+                    .statusCode(409)
+                    .body("errorCode", is("RESERVATION_TIME409_001"));
+        }
     }
 
-    @Test
-    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
-    void 예약시간_삭제시_예약이_존재하면_409를_반환한다() {
-        String cookie = authenticate();
-        createDefaultTimes(cookie);
-        createDefaultThemes(cookie);
+    @Nested
+    class 인증_실패 {
 
-        RestAssured.given().log().all()
-                .header("Cookie", cookie)
-                .contentType(ContentType.JSON)
-                .body(reservationParams())
-                .when().post("/api/v1/reservations")
-                .then().log().all()
-                .statusCode(201)
-                .body("id", is(1));
+        @Test
+        void 비로그인_상태로_예약시간_생성시_401을_반환한다() {
+            RestAssured.given().contentType(ContentType.JSON)
+                    .body(timeParams())
+                    .when().post("/api/v1/admin/times")
+                    .then().log().all()
+                    .statusCode(401)
+                    .body("errorCode", is("AUTH401_002"));
+        }
 
-        RestAssured.given().log().all()
-                .header("Cookie", cookie)
-                .when().delete("/api/v1/admin/times/1")
-                .then().log().all()
-                .statusCode(409)
-                .body("errorCode", is("RESERVATION_TIME409_001"));
-    }
+        @Test
+        void 비로그인_상태로_예약시간_삭제시_401을_반환한다() {
+            RestAssured.given().log().all()
+                    .when().delete("/api/v1/admin/times/1")
+                    .then().log().all()
+                    .statusCode(401)
+                    .body("errorCode", is("AUTH401_002"));
+        }
 
-    @Test
-    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
-    void 예약시간_삭제시_존재하지_않는_예약시간이면_404를_반환한다() {
-        String cookie = authenticate();
-        createDefaultTimes(cookie);
-
-        RestAssured.given().log().all()
-                .header("Cookie", cookie)
-                .when().delete("/api/v1/admin/times/4")
-                .then().log().all()
-                .statusCode(404)
-                .body("errorCode", is("RESERVATION_TIME404_001"));
-    }
-
-    @Test
-    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
-    void 예약시간_생성시_startAt이_누락되면_400을_반환한다() {
-        String cookie = authenticate();
-
-        RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
-                .body("{}")
-                .when().post("/api/v1/admin/times")
-                .then().log().all()
-                .statusCode(400)
-                .body("errorCode", is("COMMON400_001"));
-    }
-
-    @Test
-    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
-    void 예약시간_생성시_시작시간_형식이_잘못되면_400을_반환한다() {
-        String cookie = authenticate();
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("startAt", "10:00:00");
-
-        RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
-                .body(params)
-                .when().post("/api/v1/admin/times")
-                .then().log().all()
-                .statusCode(400)
-                .body("errorCode", is("COMMON400_004"));
-    }
-
-    @Test
-    void 비로그인_상태로_예약시간_생성시_401을_반환한다() {
-        RestAssured.given().contentType(ContentType.JSON)
-                .body(timeParams())
-                .when().post("/api/v1/admin/times")
-                .then().log().all()
-                .statusCode(401);
-    }
-
-    @Test
-    void 비로그인_상태로_예약시간_삭제시_401을_반환한다() {
-        RestAssured.given().log().all()
-                .when().delete("/api/v1/admin/times/1")
-                .then().log().all()
-                .statusCode(401);
+        @Test
+        void 잘못된_토큰으로_예약시간_생성시_401을_반환한다() {
+            RestAssured.given().log().all()
+                    .auth().oauth2("invalid.jwt.token")
+                    .contentType(ContentType.JSON)
+                    .body(timeParams())
+                    .when().post("/api/v1/admin/times")
+                    .then().log().all()
+                    .statusCode(401)
+                    .body("errorCode", is("AUTH401_003"));
+        }
     }
 
     private String authenticate() {

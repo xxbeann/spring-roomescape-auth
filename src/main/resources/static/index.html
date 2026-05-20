@@ -952,6 +952,8 @@
     const userFriendlyErrorMessages = Object.freeze({
         AUTH401_001: "이메일 또는 비밀번호가 일치하지 않습니다.",
         AUTH401_002: "로그인이 필요합니다.",
+        AUTH401_003: "인증 정보가 유효하지 않습니다. 다시 로그인해 주세요.",
+        AUTH401_004: "세션이 만료되었습니다. 다시 로그인해 주세요.",
         RESERVATION404_001: "요청한 예약을 찾을 수 없습니다. 예약 정보를 다시 확인해 주세요.",
         RESERVATION409_001: "이미 예약된 시간입니다. 다른 시간을 선택해 주세요.",
         RESERVATION400_001: "지나간 날짜와 시간은 예약할 수 없습니다. 다른 날짜나 시간을 선택해 주세요.",
@@ -1004,6 +1006,15 @@
         const error = new Error(errorResponse.message);
         error.errorCode = errorResponse.errorCode;
         error.status = response.status;
+
+        // 401: 인증 정보 없음/만료/무효 → 클라이언트도 로그아웃 상태로 동기화
+        if (response.status === 401 && state.loggedIn) {
+            state.loggedIn = false;
+            renderAuthView();
+            reservationLookupList.innerHTML = "";
+            reservationLookupEmpty.textContent = "버튼을 눌러 내 예약 목록을 조회해 주세요.";
+            reservationLookupEmpty.classList.remove("hidden");
+        }
 
         throw error;
     }

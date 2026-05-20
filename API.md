@@ -13,18 +13,23 @@
 
 ## 인증
 
-- **세션 기반 인증**을 사용한다. 로그인 성공 시 `Set-Cookie: JSESSIONID=...; HttpOnly` 응답으로 세션 쿠키를 발급한다.
-- 인증이 필요한 API는 동일 origin에서 자동 첨부되는 `JSESSIONID` 쿠키로 사용자를 식별한다.
-- 인증이 필요한 API에 비로그인 상태로 접근하면 `401 Unauthorized` (`AUTH401_002`)를 반환한다.
+- **JWT 기반 stateless 인증**을 사용한다. 서버는 세션 상태를 유지하지 않으며, 매 요청마다 토큰을 검증한다.
+- 로그인 성공 시 클라이언트별로 다른 형태로 토큰을 전달한다:
+  - **웹**: `Set-Cookie: access_token=<JWT>; HttpOnly; SameSite=Lax` 쿠키로 발급
+  - **모바일**: 응답 본문 `{ "token": "<JWT>" }`으로 발급
+- 이후 요청에서 서버는 다음 순서로 토큰을 추출한다:
+  1. `Authorization: Bearer <JWT>` 헤더 (모바일 우선)
+  2. `access_token` 쿠키 (웹 fallback)
+- 인증 정보가 없는 요청은 `401` (`AUTH401_002`), 토큰이 무효(만료/위조/형식 오류)인 경우 `401` (`AUTH401_003`)을 반환한다.
 
 ### 인증 정책
 
 | 분류 | API |
 | --- | --- |
-| **공개** | `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`, `GET /api/v1/themes`, `GET /api/v1/themes/popular`, `GET /api/v1/reservations/times`, `GET /api/v1/reservations/times/availability` |
+| **공개** | `POST /api/v1/auth/login`, `POST /api/v1/auth/login/token`, `POST /api/v1/auth/logout`, `GET /api/v1/themes`, `GET /api/v1/themes/popular`, `GET /api/v1/reservations/times`, `GET /api/v1/reservations/times/availability` |
 | **인증 필요** | `GET /api/v1/auth/me`, `GET /api/v1/reservations`, `POST /api/v1/reservations`, `PATCH /api/v1/reservations/{id}`, `DELETE /api/v1/reservations/{id}`, `POST /api/v1/admin/themes`, `DELETE /api/v1/admin/themes/{id}`, `POST /api/v1/admin/times`, `DELETE /api/v1/admin/times/{id}` |
 
-> 실제 인증 적용은 `AuthenticationConfig`의 인터셉터 등록 규칙(`addPathPatterns` + `excludePathPatterns`)을 따른다. 보호 영역(`/api/v1/reservations/**`, `/api/v1/admin/**`, `/api/v1/auth/me`)에서 `/api/v1/reservations/times`와 그 하위는 공개로 예외 처리된다.
+> 실제 인증 적용은 `AuthenticationConfig`의 인터셉터 등록 규칙(`addPathPatterns` + `excludePathPatterns`)을 따른다. 보호 영역(`/api/v1/**`)에서 위 "공개" 목록의 경로는 예외 처리된다.
 
 ## 공통 에러 응답
 
@@ -44,10 +49,11 @@
 
 ## 0. 인증
 
-### 0-1. 로그인
+### 0-1. 웹 쿠키 로그인
 
 - `POST /api/v1/auth/login`
 - Content-Type: `application/x-www-form-urlencoded`
+- 웹 브라우저용. JWT를 HttpOnly 쿠키에 담아 발급한다.
 
 #### 요청 본문 (form-encoded)
 
@@ -59,7 +65,7 @@
 #### 응답
 
 - 본문 없음
-- 성공 시 `Set-Cookie: JSESSIONID=...; HttpOnly` 헤더로 세션 쿠키 발급
+- 성공 시 `Set-Cookie: access_token=<JWT>; HttpOnly; Path=/; SameSite=Lax; Max-Age=3600` 헤더 발급
 
 #### 응답 코드
 
@@ -74,10 +80,53 @@
 | --- | --- |
 | `AUTH401_001` | 이메일 또는 비밀번호가 일치하지 않습니다 |
 
-### 0-2. 현재 사용자 조회
+### 0-2. 모바일 토큰 로그인
+
+- `POST /api/v1/auth/login/token`
+- Content-Type: `application/json`
+- 모바일 앱용. JWT를 JSON 응답 본문에 담아 발급한다. 클라이언트는 Keychain/Keystore 등 안전한 저장소에 보관해야 한다.
+
+#### 요청 본문
+
+```json
+{
+  "email": "brown@email.com",
+  "password": "password"
+}
+```
+
+#### 요청 필드
+
+| 필드 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| `email` | `String` | Y | 회원 이메일 |
+| `password` | `String` | Y | 회원 비밀번호 |
+
+#### 응답 예시
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+#### 응답 코드
+
+| 상태 코드 | 설명 |
+| --- | --- |
+| `200 OK` | 로그인 성공 |
+| `401 Unauthorized` | 이메일 없음 또는 비밀번호 불일치 |
+
+#### 주요 에러 코드
+
+| 에러 코드 | 설명 |
+| --- | --- |
+| `AUTH401_001` | 이메일 또는 비밀번호가 일치하지 않습니다 |
+
+### 0-3. 현재 사용자 조회
 
 - `GET /api/v1/auth/me`
-- 인증 필요
+- 인증 필요. `Authorization` 헤더 또는 `access_token` 쿠키로 토큰 전달.
 
 #### 응답 예시
 
@@ -94,28 +143,31 @@
 | 상태 코드 | 설명 |
 | --- | --- |
 | `200 OK` | 현재 로그인 사용자 정보 반환 |
-| `401 Unauthorized` | 비로그인 상태 |
+| `401 Unauthorized` | 비로그인 또는 무효 토큰 |
 
 #### 주요 에러 코드
 
 | 에러 코드 | 설명 |
 | --- | --- |
 | `AUTH401_002` | 로그인이 필요한 요청입니다 |
+| `AUTH401_003` | 유효하지 않은 토큰입니다 (만료/위조/형식 오류) |
 
-### 0-3. 로그아웃
+### 0-4. 로그아웃
 
 - `POST /api/v1/auth/logout`
 
 #### 응답
 
 - 본문 없음
-- 서버 세션을 무효화한다 (`session.invalidate()`).
+- 응답에 `Set-Cookie: access_token=; Max-Age=0` 헤더를 포함해 클라이언트의 쿠키를 폐기한다.
+- 모바일 앱은 이 헤더를 무시하고 자체적으로 Keychain의 토큰을 폐기해야 한다.
+- JWT는 stateless이므로 서버 측 즉시 무효화는 별도 블랙리스트가 없는 한 불가능하다.
 
 #### 응답 코드
 
 | 상태 코드 | 설명 |
 | --- | --- |
-| `204 No Content` | 로그아웃 성공 (세션 없어도 동일) |
+| `204 No Content` | 로그아웃 성공 (인증 없이도 호출 가능, 멱등) |
 
 ---
 
@@ -641,9 +693,10 @@
 
 | 메서드 | 경로 | 인증 | 설명 |
 | --- | --- | --- | --- |
-| `POST` | `/api/v1/auth/login` | ❌ | 로그인 (세션 발급) |
+| `POST` | `/api/v1/auth/login` | ❌ | 웹 쿠키 로그인 (HttpOnly 쿠키에 JWT 발급) |
+| `POST` | `/api/v1/auth/login/token` | ❌ | 모바일 토큰 로그인 (JSON 응답에 JWT 발급) |
 | `GET` | `/api/v1/auth/me` | ✅ | 현재 사용자 조회 |
-| `POST` | `/api/v1/auth/logout` | ❌ | 로그아웃 (세션 무효화) |
+| `POST` | `/api/v1/auth/logout` | ❌ | 로그아웃 (쿠키 폐기) |
 | `GET` | `/api/v1/reservations` | ✅ | 내 예약 목록 조회 |
 | `POST` | `/api/v1/reservations` | ✅ | 예약 생성 |
 | `PATCH` | `/api/v1/reservations/{id}` | ✅ | 예약 날짜·시간 변경 |
@@ -656,3 +709,19 @@
 | `DELETE` | `/api/v1/admin/times/{id}` | ✅ | 예약 시간 삭제 |
 | `POST` | `/api/v1/admin/themes` | ✅ | 테마 생성 |
 | `DELETE` | `/api/v1/admin/themes/{id}` | ✅ | 테마 삭제 |
+
+## 인증 헤더 / 쿠키 사용 예시
+
+### 웹 (쿠키)
+```http
+GET /api/v1/reservations HTTP/1.1
+Host: localhost:8080
+Cookie: access_token=eyJhbGciOiJIUzI1NiIs...
+```
+
+### 모바일 (헤더)
+```http
+GET /api/v1/reservations HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
