@@ -1,5 +1,7 @@
 package roomescape.service;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.dao.ReservationDao;
 import roomescape.dao.ReservationTimeDao;
+import roomescape.domain.Member;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationTime;
 import roomescape.exception.PastReservationCancelNotAllowedException;
@@ -36,11 +39,11 @@ public class ReservationService {
     }
 
     @Transactional
-    public Reservation createReservation(Long memberId, LocalDate date, Long timeId, Long themeId) {
+    public Reservation createReservation(Long memberId, LocalDate date, Long timeId, Long themeId, Long marketId) {
         LocalTime startAt = reservationTimeDao.findReservationTimeById(timeId).getStartAt();
         validatePastReservationCreate(date, startAt);
         try {
-            Long id = reservationDao.insertWithKeyHolder(memberId, date, timeId, themeId);
+            Long id = reservationDao.insertWithKeyHolder(memberId, date, timeId, themeId, marketId);
             return reservationDao.findReservationById(id);
         } catch (DuplicateKeyException e) {
             throw new ReservationAlreadyExistsException();
@@ -66,6 +69,31 @@ public class ReservationService {
             throw new ReservationAlreadyExistsException();
         }
         return reservationDao.findReservationById(id);
+    }
+
+    @Transactional
+    public Reservation updateByManager(Long reservationId, LocalDate date, Long timeId, Member manager) {
+        ReservationTime reservationTime = findReservationTime(timeId);
+        Reservation reservation = findReservation(reservationId);
+        reservation.validateMarketOwnership(manager);
+        validatePastReservationCreate(date, reservationTime.getStartAt());
+        try {
+            reservationDao.updateById(reservationId, date, timeId);
+        } catch (DuplicateKeyException e) {
+            throw new ReservationAlreadyExistsException();
+        }
+        return reservationDao.findReservationById(reservationId);
+    }
+
+    public List<Reservation> findByMarketId(Long marketId) {
+        return reservationDao.findByMarketId(marketId);
+    }
+
+    @Transactional
+    public void deleteByManager(Long reservationId, Member manager) {
+        Reservation reservation = findReservation(reservationId);
+        reservation.validateMarketOwnership(manager);
+        reservationDao.delete(reservationId);
     }
 
     private void validateReservationOwner(Long memberId, Reservation reservation) {

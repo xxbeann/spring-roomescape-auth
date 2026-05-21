@@ -3,6 +3,7 @@ package roomescape.dao;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import roomescape.auth.Role;
 import roomescape.domain.Member;
 
 @Repository
@@ -29,7 +30,9 @@ public class MemberDao {
                 resultSet.getLong("id"),
                 resultSet.getString("email"),
                 resultSet.getString("password"),
-                resultSet.getString("name")
+                resultSet.getString("name"),
+                Role.valueOf(resultSet.getString("role")),
+                resultSet.getObject("market_id", Long.class)
         );
         return member;
     };

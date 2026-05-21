@@ -23,19 +23,26 @@ import roomescape.dto.response.TokenResponse;
 @SqlMergeMode(MergeMode.MERGE)
 public class ReservationControllerTest {
 
+    private static final String INSERT_DEFAULT_MARKET_SQL = """
+            INSERT INTO market (id, name)
+            VALUES (1, '강남점');
+            """;
+
     private static final String INSERT_DEFAULT_MEMBER_SQL = """
-            INSERT INTO member (id, email, password, name)
-            VALUES (1, 'brown@email.com', 'password', '브라운');
+            INSERT INTO member (id, email, password, name, role, market_id)
+            VALUES (1, 'brown@email.com', 'password', '브라운', 'USER', NULL),
+                   (2, 'manager-gangnam@email.com', 'password', '강남매니저', 'MANAGER', 1);
             """;
 
     private static final String EMAIL = "brown@email.com";
     private static final String PASSWORD = "password";
+    private static final String MANAGER_EMAIL = "manager-gangnam@email.com";
 
     @Nested
     class 예약_생성 {
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 성공하면_201을_반환한다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -52,7 +59,7 @@ public class ReservationControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 예약_가능한_시간이면_201을_반환한다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -76,7 +83,7 @@ public class ReservationControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 이미_예약된_시간이면_409를_반환한다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -101,7 +108,7 @@ public class ReservationControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void date가_누락되면_400을_반환한다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -121,7 +128,7 @@ public class ReservationControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 날짜_형식이_잘못되면_400을_반환한다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -138,7 +145,7 @@ public class ReservationControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 지난_날짜이면_400을_반환한다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -161,7 +168,7 @@ public class ReservationControllerTest {
     class 예약_조회 {
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 생성된_예약을_반환한다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -194,7 +201,7 @@ public class ReservationControllerTest {
     class 예약_삭제 {
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 성공하면_204를_반환한다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -231,7 +238,7 @@ public class ReservationControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 존재하지_않는_예약이면_404를_반환한다() {
             String cookie = authenticate();
 
@@ -248,7 +255,8 @@ public class ReservationControllerTest {
                 "INSERT INTO member (id, email, password, name) VALUES (1, 'brown@email.com', 'password', '브라운')",
                 "INSERT INTO reservation_time (id, start_at) VALUES (1, '10:00')",
                 "INSERT INTO theme (id, name, description, img_url) VALUES (1, '이든의 공포 하우스', '이든이 귀신으로 나옴', 'https://images.example.com/themes/horror-house.jpg')",
-                "INSERT INTO reservation (id, member_id, date, time_id, theme_id) VALUES (1, 1, DATEADD('DAY', -1, CURRENT_DATE()), 1, 1)"
+                "INSERT INTO market (id, name) VALUES (1, '강남점')",
+                "INSERT INTO reservation (id, member_id, date, time_id, theme_id, market_id) VALUES (1, 1, DATEADD('DAY', -1, CURRENT_DATE()), 1, 1, 1)"
         })
         void 이미_지난_예약이면_400을_반환한다() {
             String cookie = authenticate();
@@ -266,7 +274,7 @@ public class ReservationControllerTest {
     class 예약_변경 {
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 사용자가_본인의_예약_시간을_변경할_수_있다() {
             String cookie = authenticate();
             createDefaultThemes(cookie);
@@ -334,7 +342,7 @@ public class ReservationControllerTest {
     class 모바일_토큰_인증 {
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 토큰_로그인_후_Authorization_헤더로_예약을_생성할_수_있다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -352,7 +360,7 @@ public class ReservationControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 토큰_로그인_후_Authorization_헤더로_본인_예약을_조회할_수_있다() {
             String cookie = authenticate();
             createDefaultTimes(cookie);
@@ -399,12 +407,13 @@ public class ReservationControllerTest {
                 .token();
     }
 
-    private void createDefaultTimes(String cookie) {
+    private void createDefaultTimes(String unusedCookie) {
+        String managerCookie = authenticateAsManager();
         Map<String, String> time = new HashMap<>();
         time.put("startAt", "10:00");
 
         RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .body(time)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
@@ -413,7 +422,7 @@ public class ReservationControllerTest {
         time2.put("startAt", "11:00");
 
         RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .body(time2)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
@@ -422,19 +431,20 @@ public class ReservationControllerTest {
         time3.put("startAt", "12:00");
 
         RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .body(time3)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
     }
 
-    private void createDefaultThemes(String cookie) {
+    private void createDefaultThemes(String unusedCookie) {
+        String managerCookie = authenticateAsManager();
         Map<String, Object> themeParams = new HashMap<>();
         themeParams.put("name", "이든의 공포 하우스");
         themeParams.put("description", "이든이 귀신으로 나옴");
         themeParams.put("imgUrl", "https://images.example.com/themes/horror-house.jpg");
         RestAssured.given().log().all()
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams)
                 .when().post("/api/v1/admin/themes")
@@ -446,11 +456,22 @@ public class ReservationControllerTest {
         themeParams2.put("imgUrl", "https://images.example.com/themes/jungkong-room.jpg");
 
         RestAssured.given().log().all()
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams2)
                 .when().post("/api/v1/admin/themes")
                 .then().statusCode(201);
+    }
+
+    private String authenticateAsManager() {
+        return RestAssured
+                .given()
+                .param("email", MANAGER_EMAIL)
+                .param("password", PASSWORD)
+                .when().post("/api/v1/auth/login")
+                .then()
+                .extract().header("Set-Cookie")
+                .split(";")[0];
     }
 
     private Map<String, Object> reservationParams() {
@@ -458,6 +479,7 @@ public class ReservationControllerTest {
         params.put("date", LocalDate.now().plusDays(1).toString());
         params.put("timeId", 1L);
         params.put("themeId", 1L);
+        params.put("marketId", 1L);
         return params;
     }
 

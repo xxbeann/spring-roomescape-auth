@@ -5,15 +5,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import roomescape.domain.Member;
 
 class LoginMemberArgumentResolverTest {
 
     private final LoginMemberArgumentResolver resolver =
-            new LoginMemberArgumentResolver(null);
+            new LoginMemberArgumentResolver(null, null);
 
     @Test
     void 어노테이션이_있고_Long타입이면_지원한다() throws NoSuchMethodException {
-        MethodParameter parameter = methodParameter("withAnnotation", Long.class);
+        MethodParameter parameter = methodParameter("withLongAnnotation", Long.class);
+        assertThat(resolver.supportsParameter(parameter)).isTrue();
+    }
+
+    @Test
+    void 어노테이션이_있고_Member타입이면_지원한다() throws NoSuchMethodException {
+        MethodParameter parameter = methodParameter("withMemberAnnotation", Member.class);
         assertThat(resolver.supportsParameter(parameter)).isTrue();
     }
 
@@ -37,7 +44,10 @@ class LoginMemberArgumentResolverTest {
 
     @SuppressWarnings("unused")
     private static class Fixtures {
-        void withAnnotation(@LoginMember Long memberId) {
+        void withLongAnnotation(@LoginMember Long memberId) {
+        }
+
+        void withMemberAnnotation(@LoginMember Member member) {
         }
 
         void withoutAnnotation(Long memberId) {

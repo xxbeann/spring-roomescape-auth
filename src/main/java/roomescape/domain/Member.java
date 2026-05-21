@@ -1,5 +1,7 @@
 package roomescape.domain;
 
+import roomescape.auth.Role;
+
 public class Member {
 
     private static final String EMAIL_PATTERN = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
@@ -11,16 +13,22 @@ public class Member {
     private final String email;
     private final String password;
     private final String name;
+    private final Role role;
+    private final Long marketId;
 
-    public Member(Long id, String email, String password, String name) {
+    public Member(Long id, String email, String password, String name, Role role, Long marketId) {
         validateEmail(email);
         validatePassword(password);
         validateName(name);
+        validateRole(role);
+        validateMarketId(marketId);
 
         this.id = id;
         this.email = email;
         this.password = password;
         this.name = name;
+        this.role = role;
+        this.marketId = marketId;
     }
 
     public Long getId() {
@@ -33,6 +41,14 @@ public class Member {
 
     public String getName() {
         return name;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public Long getMarketId() {
+        return marketId;
     }
 
     public boolean matchesPassword(String rawPassword) {
@@ -63,6 +79,18 @@ public class Member {
         }
         if (!name.matches(NAME_PATTERN)) {
             throw new IllegalArgumentException("이름은 한글과 영문만 입력할 수 있습니다.");
+        }
+    }
+
+    private void validateRole(Role role) {
+        if (role == null) {
+            throw new IllegalArgumentException("권한은 비어 있을 수 없습니다.");
+        }
+    }
+
+    private void validateMarketId(Long marketId) {
+        if (marketId != null && marketId <= 0) {
+            throw new IllegalArgumentException("매장 ID는 양수여야 합니다.");
         }
     }
 }

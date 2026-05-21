@@ -21,19 +21,24 @@ import org.springframework.test.context.jdbc.SqlMergeMode.MergeMode;
 @SqlMergeMode(MergeMode.MERGE)
 public class AdminThemeControllerTest {
 
-    private static final String INSERT_DEFAULT_MEMBER_SQL = """
-            INSERT INTO member (id, email, password, name)
-            VALUES (1, 'brown@email.com', 'password', '브라운');
+    private static final String INSERT_DEFAULT_MARKET_SQL = """
+            INSERT INTO market (id, name)
+            VALUES (1, '강남점');
             """;
 
-    private static final String EMAIL = "brown@email.com";
+    private static final String INSERT_DEFAULT_MEMBER_SQL = """
+            INSERT INTO member (id, email, password, name, role, market_id)
+            VALUES (1, 'manager-gangnam@email.com', 'password', '강남매니저', 'MANAGER', 1);
+            """;
+
+    private static final String EMAIL = "manager-gangnam@email.com";
     private static final String PASSWORD = "password";
 
     @Nested
     class 테마_생성 {
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 성공하면_201을_반환한다() {
             String cookie = authenticate();
 
@@ -54,7 +59,7 @@ public class AdminThemeControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 이름이_비어있으면_400을_반환한다() {
             String cookie = authenticate();
 
@@ -74,7 +79,7 @@ public class AdminThemeControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void imgUrl_형식이_잘못되면_400을_반환한다() {
             String cookie = authenticate();
 
@@ -98,7 +103,7 @@ public class AdminThemeControllerTest {
     class 테마_삭제 {
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 성공하면_204를_반환한다() {
             String cookie = authenticate();
 
@@ -131,7 +136,7 @@ public class AdminThemeControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 테마가_존재하지_않으면_404를_반환한다() {
             String cookie = authenticate();
 
@@ -153,7 +158,7 @@ public class AdminThemeControllerTest {
         }
 
         @Test
-        @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+        @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
         void 예약이_존재하면_409를_반환한다() {
             String cookie = authenticate();
 
@@ -242,6 +247,7 @@ public class AdminThemeControllerTest {
         params.put("date", LocalDate.now().plusDays(1).toString());
         params.put("timeId", 1L);
         params.put("themeId", 1L);
+        params.put("marketId", 1L);
         return params;
     }
 

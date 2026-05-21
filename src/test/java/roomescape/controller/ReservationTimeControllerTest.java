@@ -20,13 +20,20 @@ import org.springframework.test.context.jdbc.SqlMergeMode.MergeMode;
 public class ReservationTimeControllerTest {
     private static final String AVAILABLE_TIME_TEST_DATE = "2099-05-05";
 
+    private static final String INSERT_DEFAULT_MARKET_SQL = """
+            INSERT INTO market (id, name)
+            VALUES (1, '강남점');
+            """;
+
     private static final String INSERT_DEFAULT_MEMBER_SQL = """
-            INSERT INTO member (id, email, password, name)
-            VALUES (1, 'brown@email.com', 'password', '브라운');
+            INSERT INTO member (id, email, password, name, role, market_id)
+            VALUES (1, 'brown@email.com', 'password', '브라운', 'USER', NULL),
+                   (2, 'manager-gangnam@email.com', 'password', '강남매니저', 'MANAGER', 1);
             """;
 
     private static final String EMAIL = "brown@email.com";
     private static final String PASSWORD = "password";
+    private static final String MANAGER_EMAIL = "manager-gangnam@email.com";
 
     @Test
     void 예약시간_조회시_성공하면_200을_반환한다() {
@@ -38,7 +45,7 @@ public class ReservationTimeControllerTest {
     }
 
     @Test
-    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+    @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
     void 예약가능시간_조회시_성공하면_200을_반환한다() {
         String cookie = authenticate();
         createDefaultTimes(cookie);
@@ -64,7 +71,7 @@ public class ReservationTimeControllerTest {
     }
 
     @Test
-    @Sql(statements = INSERT_DEFAULT_MEMBER_SQL)
+    @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
     void 예약생성시_같은_날짜와_시간이어도_테마가_다르면_201을_반환한다() {
         String cookie = authenticate();
         createDefaultTimes(cookie);
@@ -134,12 +141,13 @@ public class ReservationTimeControllerTest {
                 .split(";")[0];
     }
 
-    private void createDefaultTimes(String cookie) {
+    private void createDefaultTimes(String unusedCookie) {
+        String managerCookie = authenticateAsManager();
         Map<String, String> time = new HashMap<>();
         time.put("startAt", "10:00");
 
         RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .body(time)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
@@ -148,7 +156,7 @@ public class ReservationTimeControllerTest {
         time2.put("startAt", "11:00");
 
         RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .body(time2)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
@@ -157,19 +165,20 @@ public class ReservationTimeControllerTest {
         time3.put("startAt", "12:00");
 
         RestAssured.given().contentType(ContentType.JSON)
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .body(time3)
                 .when().post("/api/v1/admin/times")
                 .then().statusCode(201);
     }
 
-    private void createDefaultThemes(String cookie) {
+    private void createDefaultThemes(String unusedCookie) {
+        String managerCookie = authenticateAsManager();
         Map<String, Object> themeParams = new HashMap<>();
         themeParams.put("name", "이든의 공포 하우스");
         themeParams.put("description", "이든이 귀신으로 나옴");
         themeParams.put("imgUrl", "https://images.example.com/themes/horror-house.jpg");
         RestAssured.given().log().all()
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams)
                 .when().post("/api/v1/admin/themes")
@@ -181,11 +190,22 @@ public class ReservationTimeControllerTest {
         themeParams2.put("imgUrl", "https://images.example.com/themes/jungkong-room.jpg");
 
         RestAssured.given().log().all()
-                .header("Cookie", cookie)
+                .header("Cookie", managerCookie)
                 .contentType(ContentType.JSON)
                 .body(themeParams2)
                 .when().post("/api/v1/admin/themes")
                 .then().statusCode(201);
+    }
+
+    private String authenticateAsManager() {
+        return RestAssured
+                .given()
+                .param("email", MANAGER_EMAIL)
+                .param("password", PASSWORD)
+                .when().post("/api/v1/auth/login")
+                .then()
+                .extract().header("Set-Cookie")
+                .split(";")[0];
     }
 
     private Map<String, Object> reservationParams() {
@@ -193,6 +213,7 @@ public class ReservationTimeControllerTest {
         params.put("date", AVAILABLE_TIME_TEST_DATE);
         params.put("timeId", 1L);
         params.put("themeId", 1L);
+        params.put("marketId", 1L);
         return params;
     }
 

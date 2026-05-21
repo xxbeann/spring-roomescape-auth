@@ -331,3 +331,84 @@ Controller는 가능한 Response DTO를 반환한다.
 - [x] 이미 지난 예약은 취소할 수 없다.
 - [x] 사용자가 본인의 예약의**날짜·시간을 변경**할 수 있다.
 - [x] 변경·취소 시 발생하는 에러 케이스(이미 지난 예약을 취소, 변경하려는 시간이 이미 차 있음 등)도 2단계의 규칙에 맞춰 처리한다.
+
+## 사이클 3
+
+### 기능명세서
+
+#### **1단계 - 웹 세션/쿠키 로그인**
+
+- [x] 사용자가 이메일·비밀번호로 로그인할 수 있다.
+- [x] 로그인 성공 시 서버가 인증 정보를 발급하여 클라이언트에 전달한다.
+- [x] 인증이 필요한 API는 비로그인 요청을 거부한다 (`401 AUTH401_002`).
+- [x] 예약 생성 시 `memberId`는 요청 본문이 아닌 인증 정보에서 추출한다.
+
+#### **2단계 - 모바일 인증 / JWT stateless 전환**
+
+- [x] **JWT 기반 stateless 인증**으로 전환한다. 세션은 사용하지 않는다.
+- [x] 웹 클라이언트: `Set-Cookie: access_token=<JWT>; HttpOnly; SameSite=Lax`로 발급.
+- [x] 모바일 클라이언트: `POST /api/v1/auth/login/token` 응답 본문에 `{ "token": "..." }` 발급.
+- [x] 서버는 `Authorization: Bearer ...` 헤더 우선, 없으면 `access_token` 쿠키로 토큰을 추출한다.
+- [x] 토큰 검증 실패 유형을 구분한다: 위조·형식 오류(`AUTH401_003`) / 만료(`AUTH401_004`).
+- [x] 컨트롤러에서 토큰·세션 직접 접근 코드를 제거하고 `@LoginMember`와 ArgumentResolver로 위임한다.
+- [x] JWT 서명 키는 `.env`/환경 변수로 외부 주입한다 (소스에 하드코딩하지 않음).
+
+#### **3단계 - 인가 / 매장 매니저 권한**
+
+- [x] 회원에 `role`(USER / MANAGER) 개념을 도입한다.
+- [x] 매니저는 `market_id`로 자기 매장에 묶인다.
+- [x] 예약은 어떤 매장의 예약인지 식별할 수 있어야 한다 (`reservation.market_id`).
+- [x] 매장 매니저는**자기 매장의 예약만** 조회·변경·삭제할 수 있다.
+- [x] 다른 매장의 예약에 접근하면 거부한다 (`403 AUTH403_002`).
+- [x] 매니저 권한이 없는 사용자가 매니저 API에 접근하면 거부한다 (`403 AUTH403_001`).
+- [x] 인증 실패(`401`)와 인가 실패(`403`)를 같은 코드로 뭉개지 않고 명확히 구분한다.
+
+#### 인가 판단 위치 — 설계 결정
+
+| 판단 | 위치 | 메커니즘 |
+| --- | --- | --- |
+| 토큰 유효성 (인증) | `LoginCheckInterceptor` | JWT 서명·형식 검증 |
+| 역할 (role check) | `LoginMemberArgumentResolver` | `@LoginMember(role = MANAGER)` 어노테이션 |
+| 자원 범위 (marketId 비교) | `Reservation` 도메인 | `reservation.validateMarketOwnership(member)` |
+
+- **Resolver**는 어노테이션에 명시된 role을 검증하고 Member를 주입한다.
+- **도메인**은 자기 자신의 무결성(다른 매장 매니저가 수정 못 함)을 자기-방어한다.
+- 컨트롤러 메서드 본문에는 권한 코드가 한 줄도 없다 — 시그니처(`@LoginMember(role = MANAGER) Member manager`)가 정책을 선언한다.
+
+#### API 명세서
+
+##### Markets - 01
+
+- API 설명: 매장 목록을 조회한다.
+- URI: `/api/v1/markets`
+- Method: `GET`
+- 인증: 공개
+
+##### Admin Market Reservations - 01 ~ 03
+
+- 자기 매장 예약 조회: `GET /api/v1/admin/market/reservations`
+- 자기 매장 예약 변경: `PATCH /api/v1/admin/market/reservations/{id}`
+- 자기 매장 예약 삭제: `DELETE /api/v1/admin/market/reservations/{id}`
+- 인증: 로그인 + `MANAGER` 권한 필요
+- 자세한 명세는 `API.md`의 §7 참고.
+
+#### 회고
+
+```
+선택 도구: HandlerMethodArgumentResolver(@LoginMember) + 도메인 자기-방어 (validateMarketOwnership)
+다른 후보:
+  - Spring Security 도입 (학습 미션 범위 밖, 도입 비용 큼)
+  - Interceptor 단독 처리 (어떤 자원에 어떤 권한 필요한지 path 패턴으로만 표현 → URL과 권한 결합)
+  - Service 분산 처리 (모든 보호 메서드에 권한 코드 반복 → 누락 위험)
+선택 이유:
+  - role check는 자원과 무관한 결정 → 한 곳(Resolver)에 모으면 흩어짐 자체가 발생 안 함.
+  - marketId 비교는 (사용자, 자원) 쌍이 필요 → 두 객체가 메모리에 있을 때 도메인이 자기 자신 보호.
+  - 컨트롤러 시그니처가 정책 선언이 되어 의도가 시각적으로 드러남.
+인가 판단 위치:
+  - Resolver: role (사용자 인가)
+  - Domain (Reservation): marketId 비교 (자원 인가)
+유지하거나 변경하고 싶은 점:
+  - 유지: 시그니처-기반 선언적 인가, 도메인 자기-방어 패턴.
+  - 변경하고 싶은 점: 실제 운영 시스템이라면 Spring Security로 이관해 typed SecurityContext +
+    표준 필터 체인을 사용. 토큰 만료 시 refresh token / 단일 세션 무효화 메커니즘 도입.
+```

@@ -16,6 +16,10 @@ public record ReservationCreateRequest(
 
         @NotNull
         @Positive
-        Long themeId
+        Long themeId,
+
+        @NotNull
+        @Positive
+        Long marketId
 ) {
 }

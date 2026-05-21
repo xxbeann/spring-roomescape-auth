@@ -1,6 +1,7 @@
 package roomescape.domain;
 
 import java.time.LocalDate;
+import roomescape.exception.WrongMarketAccessException;
 
 public class Reservation {
 
@@ -9,18 +10,21 @@ public class Reservation {
     private final LocalDate date;
     private final ReservationTime time;
     private final Long themeId;
+    private final Long marketId;
 
-    public Reservation(Long id, Long memberId, LocalDate date, ReservationTime time, Long themeId) {
+    public Reservation(Long id, Long memberId, LocalDate date, ReservationTime time, Long themeId, Long marketId) {
         validateMemberId(memberId);
         validateDate(date);
         validateTime(time);
         validateThemeId(themeId);
+        validateMarketId(marketId);
 
         this.id = id;
         this.memberId = memberId;
         this.date = date;
         this.time = time;
         this.themeId = themeId;
+        this.marketId = marketId;
     }
 
     public Long getId() {
@@ -41,6 +45,16 @@ public class Reservation {
 
     public Long getThemeId() {
         return themeId;
+    }
+
+    public Long getMarketId() {
+        return marketId;
+    }
+
+    public void validateMarketOwnership(Member member) {
+        if (!this.marketId.equals(member.getMarketId())) {
+            throw new WrongMarketAccessException();
+        }
     }
 
     private void validateMemberId(Long memberId) {
@@ -72,6 +86,15 @@ public class Reservation {
 
         if (themeId <= 0) {
             throw new IllegalArgumentException("테마 ID는 양수여야 합니다.");
+        }
+    }
+
+    private void validateMarketId(Long marketId) {
+        if (marketId == null) {
+            throw new IllegalArgumentException("매장 ID는 비어 있을 수 없습니다.");
+        }
+        if (marketId <= 0) {
+            throw new IllegalArgumentException("매장 ID는 양수여야 합니다.");
         }
     }
 }
