@@ -11,12 +11,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import roomescape.auth.JwtTokenProvider;
-import roomescape.auth.TokenExtractor;
+import roomescape.auth.LoginMember;
 import roomescape.domain.Member;
 import roomescape.dto.request.LoginRequest;
 import roomescape.dto.response.MemberResponse;
 import roomescape.dto.response.TokenResponse;
-import roomescape.exception.UnauthorizedException;
 import roomescape.service.AuthService;
 
 @RequestMapping("/api/v1/auth")
@@ -62,13 +61,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<MemberResponse> getCurrentMember(HttpServletRequest request) {
-        String token = TokenExtractor.extract(request);
-        if (token == null) {
-            throw new UnauthorizedException();
-        }
-        Long memberId = jwtTokenProvider.getMemberId(token);
-
+    public ResponseEntity<MemberResponse> getCurrentMember(@LoginMember Long memberId) {
         Member member = authService.findCurrentMember(memberId);
         return ResponseEntity.ok(MemberResponse.from(member));
     }
