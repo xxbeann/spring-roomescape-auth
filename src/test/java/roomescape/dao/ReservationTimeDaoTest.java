@@ -51,24 +51,24 @@ public class ReservationTimeDaoTest {
             VALUES (1, 'brown@email.com', 'password', '브라운');
             """;
 
-    private static final String INSERT_DEFAULT_MARKET_SQL = """
-            INSERT INTO market (id, name)
+    private static final String INSERT_DEFAULT_STORE_SQL = """
+            INSERT INTO store (id, name)
             VALUES (1, '강남점');
             """;
 
     private static final String INSERT_RESERVED_TIME_ON_TARGET_DATE_SQL = """
-            INSERT INTO reservation (id, member_id, date, time_id, theme_id, market_id)
+            INSERT INTO reservation (id, member_id, date, time_id, theme_id, store_id)
             VALUES (1, 1, '2026-05-01', 1, 1, 1),
                    (2, 1, '2026-05-01', 2, 1, 1);
             """;
 
     private static final String INSERT_RESERVED_TIME_ON_OTHER_DATE_SQL = """
-            INSERT INTO reservation (id, member_id, date, time_id, theme_id, market_id)
+            INSERT INTO reservation (id, member_id, date, time_id, theme_id, store_id)
             VALUES (1, 1, '2026-05-02', 1, 1, 1);
             """;
 
     private static final String INSERT_RESERVED_TIME_ON_OTHER_THEME_SQL = """
-            INSERT INTO reservation (id, member_id, date, time_id, theme_id, market_id)
+            INSERT INTO reservation (id, member_id, date, time_id, theme_id, store_id)
             VALUES (1, 1, '2026-05-01', 1, 2, 1);
             """;
 
@@ -135,7 +135,7 @@ public class ReservationTimeDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_SINGLE_MEMBER_SQL,
-            INSERT_DEFAULT_MARKET_SQL,
+            INSERT_DEFAULT_STORE_SQL,
             INSERT_RESERVED_TIME_ON_TARGET_DATE_SQL
     })
     void 특정_날짜와_테마에_이미_예약된_시간은_예약불가능하다() {
@@ -163,7 +163,7 @@ public class ReservationTimeDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_SINGLE_MEMBER_SQL,
-            INSERT_DEFAULT_MARKET_SQL,
+            INSERT_DEFAULT_STORE_SQL,
             INSERT_RESERVED_TIME_ON_OTHER_DATE_SQL
     })
     void 다른_날짜의_예약은_예약가능여부에_영향을_주지_않는다() {
@@ -189,7 +189,7 @@ public class ReservationTimeDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_TWO_THEMES_SQL,
             INSERT_SINGLE_MEMBER_SQL,
-            INSERT_DEFAULT_MARKET_SQL,
+            INSERT_DEFAULT_STORE_SQL,
             INSERT_RESERVED_TIME_ON_OTHER_THEME_SQL
     })
     void 다른_테마의_예약은_예약가능여부에_영향을_주지_않는다() {

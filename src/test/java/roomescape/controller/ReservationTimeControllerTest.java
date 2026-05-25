@@ -20,13 +20,13 @@ import org.springframework.test.context.jdbc.SqlMergeMode.MergeMode;
 public class ReservationTimeControllerTest {
     private static final String AVAILABLE_TIME_TEST_DATE = "2099-05-05";
 
-    private static final String INSERT_DEFAULT_MARKET_SQL = """
-            INSERT INTO market (id, name)
+    private static final String INSERT_DEFAULT_STORE_SQL = """
+            INSERT INTO store (id, name)
             VALUES (1, '강남점');
             """;
 
     private static final String INSERT_DEFAULT_MEMBER_SQL = """
-            INSERT INTO member (id, email, password, name, role, market_id)
+            INSERT INTO member (id, email, password, name, role, store_id)
             VALUES (1, 'brown@email.com', 'password', '브라운', 'USER', NULL),
                    (2, 'manager-gangnam@email.com', 'password', '강남매니저', 'MANAGER', 1);
             """;
@@ -45,7 +45,7 @@ public class ReservationTimeControllerTest {
     }
 
     @Test
-    @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
+    @Sql(statements = {INSERT_DEFAULT_STORE_SQL, INSERT_DEFAULT_MEMBER_SQL})
     void 예약가능시간_조회시_성공하면_200을_반환한다() {
         String cookie = authenticate();
         createDefaultTimes(cookie);
@@ -71,7 +71,7 @@ public class ReservationTimeControllerTest {
     }
 
     @Test
-    @Sql(statements = {INSERT_DEFAULT_MARKET_SQL, INSERT_DEFAULT_MEMBER_SQL})
+    @Sql(statements = {INSERT_DEFAULT_STORE_SQL, INSERT_DEFAULT_MEMBER_SQL})
     void 예약생성시_같은_날짜와_시간이어도_테마가_다르면_201을_반환한다() {
         String cookie = authenticate();
         createDefaultTimes(cookie);
@@ -213,7 +213,7 @@ public class ReservationTimeControllerTest {
         params.put("date", AVAILABLE_TIME_TEST_DATE);
         params.put("timeId", 1L);
         params.put("themeId", 1L);
-        params.put("marketId", 1L);
+        params.put("storeId", 1L);
         return params;
     }
 

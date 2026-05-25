@@ -32,7 +32,7 @@ public class MemberDao {
                 resultSet.getString("password"),
                 resultSet.getString("name"),
                 Role.valueOf(resultSet.getString("role")),
-                resultSet.getObject("market_id", Long.class)
+                resultSet.getObject("store_id", Long.class)
         );
         return member;
     };

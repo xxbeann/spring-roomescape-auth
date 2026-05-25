@@ -1,4 +1,4 @@
-INSERT INTO market (name)
+INSERT INTO store (name)
 VALUES ('강남점'),
        ('홍대점'),
        ('판교점');
@@ -21,7 +21,7 @@ VALUES ('이든의 공포 하우스', '이든이 귀신으로 나오는 공포 �
        ('정콩이의 방탈출', '정콩이가 지키는 미스터리 방탈출', 'https://images.example.com/themes/jungkong-room.jpg'),
        ('우주 정거장 탈출', '고장 난 우주 정거장에서 귀환하는 SF 테마', 'https://images.example.com/themes/space-station.jpg');
 
-INSERT INTO member (email, password, name, role, market_id)
+INSERT INTO member (email, password, name, role, store_id)
 VALUES ('lucy@email.com', 'password', '루시', 'USER', NULL),
        ('brown@email.com', 'password', '브라운', 'USER', NULL),
        ('jeongkong@email.com', 'password', '정콩이', 'USER', NULL),
@@ -31,8 +31,8 @@ VALUES ('lucy@email.com', 'password', '루시', 'USER', NULL),
        ('cobi@email.com', 'password', '코비', 'USER', NULL),
        ('sally@email.com', 'password', '샐리', 'USER', NULL);
 
--- 강남점 (market 1): 세 테마 모두 운영
-INSERT INTO reservation (member_id, date, time_id, theme_id, market_id)
+-- 강남점 (store 1): 세 테마 모두 운영
+INSERT INTO reservation (member_id, date, time_id, theme_id, store_id)
 VALUES (1, '2026-05-01', 1, 1, 1),
        (2, '2026-05-01', 2, 2, 1),
        (3, '2026-05-01', 3, 3, 1),
@@ -58,8 +58,8 @@ VALUES (1, '2026-05-01', 1, 1, 1),
        (3, '2026-05-25', 11, 2, 1),
        (7, '2026-05-25', 1, 3, 1);
 
--- 홍대점 (market 2): 세 테마 모두 운영
-INSERT INTO reservation (member_id, date, time_id, theme_id, market_id)
+-- 홍대점 (store 2): 세 테마 모두 운영
+INSERT INTO reservation (member_id, date, time_id, theme_id, store_id)
 VALUES (1, '2026-05-06', 1, 1, 2),
        (2, '2026-05-06', 2, 2, 2),
        (3, '2026-05-06', 3, 3, 2),
@@ -91,8 +91,8 @@ VALUES (1, '2026-05-06', 1, 1, 2),
        (7, '2026-05-26', 11, 2, 2),
        (8, '2026-05-26', 1, 3, 2);
 
--- 판교점 (market 3): 세 테마 모두 운영
-INSERT INTO reservation (member_id, date, time_id, theme_id, market_id)
+-- 판교점 (store 3): 세 테마 모두 운영
+INSERT INTO reservation (member_id, date, time_id, theme_id, store_id)
 VALUES (1, '2026-05-16', 1, 1, 3),
        (2, '2026-05-16', 2, 2, 3),
        (3, '2026-05-16', 3, 3, 3),

@@ -24,13 +24,13 @@ VALUES (1, '이든의 공포 하우스', '이든이 귀신으로 나오는 공�
        (10, '사라진 탐정', '실종된 탐정의 마지막 사건을 추적하는 테마', 'https://images.example.com/themes/missing-detective.jpg'),
        (11, '집계 제외 후보', '상위 10개 경계 밖으로 밀릴 테마', 'https://images.example.com/themes/excluded-candidate.jpg');
 
-INSERT INTO market (id, name)
+INSERT INTO store (id, name)
 VALUES (1, '강남점');
 
 INSERT INTO member (id, email, password, name)
 VALUES (1, 'brown@email.com', 'password', '브라운');
 
-INSERT INTO reservation (member_id, date, time_id, theme_id, market_id)
+INSERT INTO reservation (member_id, date, time_id, theme_id, store_id)
 VALUES (1, '2026-05-01', 1, 1, 1),
        (1, '2026-05-02', 1, 1, 1),
        (1, '2026-05-03', 1, 1, 1),

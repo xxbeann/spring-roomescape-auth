@@ -40,25 +40,25 @@ public class ReservationDaoTest {
                    (2, 'jeongkong@email.com', 'password', '정콩이');
             """;
 
-    private static final String INSERT_DEFAULT_MARKET_SQL = """
-            INSERT INTO market (id, name)
+    private static final String INSERT_DEFAULT_STORE_SQL = """
+            INSERT INTO store (id, name)
             VALUES (1, '강남점');
             """;
 
     private static final String INSERT_TWO_RESERVATIONS_SQL = """
-            INSERT INTO reservation (id, member_id, date, time_id, theme_id, market_id)
+            INSERT INTO reservation (id, member_id, date, time_id, theme_id, store_id)
             VALUES (1, 1, '2026-05-01', 1, 1, 1),
                    (2, 2, '2026-05-02', 2, 1, 1);
             """;
 
-    private static final String INSERT_TWO_MARKETS_SQL = """
-            INSERT INTO market (id, name)
+    private static final String INSERT_TWO_STORES_SQL = """
+            INSERT INTO store (id, name)
             VALUES (1, '강남점'),
                    (2, '홍대점');
             """;
 
-    private static final String INSERT_RESERVATIONS_ACROSS_MARKETS_SQL = """
-            INSERT INTO reservation (id, member_id, date, time_id, theme_id, market_id)
+    private static final String INSERT_RESERVATIONS_ACROSS_STORES_SQL = """
+            INSERT INTO reservation (id, member_id, date, time_id, theme_id, store_id)
             VALUES (1, 1, '2026-05-01', 1, 1, 1),
                    (2, 2, '2026-05-02', 2, 1, 1),
                    (3, 1, '2026-05-03', 3, 1, 2);
@@ -72,7 +72,7 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_DEFAULT_MARKET_SQL,
+            INSERT_DEFAULT_STORE_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void 모든_예약을_조회한다() {
@@ -99,7 +99,7 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_DEFAULT_MARKET_SQL,
+            INSERT_DEFAULT_STORE_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void memberId로_예약을_조회한다() {
@@ -123,7 +123,7 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_DEFAULT_MARKET_SQL,
+            INSERT_DEFAULT_STORE_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void ID에_해당하는_예약을_조회한다() {
@@ -153,7 +153,7 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_DEFAULT_MARKET_SQL,
+            INSERT_DEFAULT_STORE_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void 예약을_수정한다() {
@@ -186,7 +186,7 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_DEFAULT_MARKET_SQL
+            INSERT_DEFAULT_STORE_SQL
     })
     void 예약을_추가한다() {
         Long id = reservationDao.insertWithKeyHolder(
@@ -225,7 +225,7 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_DEFAULT_MARKET_SQL,
+            INSERT_DEFAULT_STORE_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void 예약을_삭제한다() {
@@ -241,7 +241,7 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_DEFAULT_MARKET_SQL,
+            INSERT_DEFAULT_STORE_SQL,
             INSERT_TWO_RESERVATIONS_SQL
     })
     void 같은_날짜_시간_테마의_예약을_추가하면_예외가_발생한다() {
@@ -259,15 +259,15 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_TWO_MARKETS_SQL,
-            INSERT_RESERVATIONS_ACROSS_MARKETS_SQL
+            INSERT_TWO_STORES_SQL,
+            INSERT_RESERVATIONS_ACROSS_STORES_SQL
     })
-    void findByMarketId는_해당_매장의_예약만_조회한다() {
-        List<Reservation> gangnamReservations = reservationDao.findByMarketId(1L);
+    void findByStoreId는_해당_매장의_예약만_조회한다() {
+        List<Reservation> gangnamReservations = reservationDao.findByStoreId(1L);
 
         assertThat(gangnamReservations).hasSize(2);
         assertThat(gangnamReservations)
-                .extracting(Reservation::getId, Reservation::getMarketId)
+                .extracting(Reservation::getId, Reservation::getStoreId)
                 .containsExactlyInAnyOrder(
                         tuple(1L, 1L),
                         tuple(2L, 1L)
@@ -279,15 +279,15 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_TWO_MARKETS_SQL,
-            INSERT_RESERVATIONS_ACROSS_MARKETS_SQL
+            INSERT_TWO_STORES_SQL,
+            INSERT_RESERVATIONS_ACROSS_STORES_SQL
     })
-    void 다른_매장의_예약은_findByMarketId_결과에_포함되지_않는다() {
-        List<Reservation> hongdaeReservations = reservationDao.findByMarketId(2L);
+    void 다른_매장의_예약은_findByStoreId_결과에_포함되지_않는다() {
+        List<Reservation> hongdaeReservations = reservationDao.findByStoreId(2L);
 
         assertThat(hongdaeReservations).hasSize(1);
         assertThat(hongdaeReservations)
-                .extracting(Reservation::getId, Reservation::getMarketId)
+                .extracting(Reservation::getId, Reservation::getStoreId)
                 .containsExactly(tuple(3L, 2L));
     }
 
@@ -296,10 +296,10 @@ public class ReservationDaoTest {
             INSERT_THREE_TIMES_SQL,
             INSERT_SINGLE_THEME_SQL,
             INSERT_TWO_MEMBERS_SQL,
-            INSERT_TWO_MARKETS_SQL
+            INSERT_TWO_STORES_SQL
     })
-    void 예약이_없는_매장은_findByMarketId가_빈_리스트를_반환한다() {
-        List<Reservation> reservations = reservationDao.findByMarketId(1L);
+    void 예약이_없는_매장은_findByStoreId가_빈_리스트를_반환한다() {
+        List<Reservation> reservations = reservationDao.findByStoreId(1L);
 
         assertThat(reservations).isEmpty();
     }

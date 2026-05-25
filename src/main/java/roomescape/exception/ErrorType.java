@@ -29,7 +29,7 @@ public enum ErrorType {
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH401_004", "토큰이 만료되었습니다. 다시 로그인해 주세요."),
 
     INSUFFICIENT_ROLE(HttpStatus.FORBIDDEN, "AUTH403_001", "권한이 없습니다."),
-    WRONG_MARKET_ACCESS(HttpStatus.FORBIDDEN, "AUTH403_002", "다른 매장에 접근권한이 없습니다.");
+    WRONG_STORE_ACCESS(HttpStatus.FORBIDDEN, "AUTH403_002", "다른 매장에 접근권한이 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String errorCode;

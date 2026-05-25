@@ -19,19 +19,19 @@ import roomescape.dto.response.ReservationResponse;
 import roomescape.service.ReservationService;
 
 @RestController
-@RequestMapping("/api/v1/admin/market/reservations")
-public class AdminMarketReservationController {
+@RequestMapping("/api/v1/admin/store/reservations")
+public class AdminStoreReservationController {
 
     private final ReservationService reservationService;
 
-    public AdminMarketReservationController(ReservationService reservationService) {
+    public AdminStoreReservationController(ReservationService reservationService) {
         this.reservationService = reservationService;
     }
 
     @GetMapping
-    public ResponseEntity<List<ReservationResponse>> getMarketReservations(
+    public ResponseEntity<List<ReservationResponse>> getStoreReservations(
             @LoginMember(role = Role.MANAGER) Member manager) {
-        List<Reservation> reservations = reservationService.findByMarketId(manager.getMarketId());
+        List<Reservation> reservations = reservationService.findByStoreId(manager.getStoreId());
         return ResponseEntity.ok().body(ReservationResponse.fromAll(reservations));
     }
 

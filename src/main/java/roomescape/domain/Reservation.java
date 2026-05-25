@@ -1,7 +1,7 @@
 package roomescape.domain;
 
 import java.time.LocalDate;
-import roomescape.exception.WrongMarketAccessException;
+import roomescape.exception.WrongStoreAccessException;
 
 public class Reservation {
 
@@ -10,21 +10,21 @@ public class Reservation {
     private final LocalDate date;
     private final ReservationTime time;
     private final Long themeId;
-    private final Long marketId;
+    private final Long storeId;
 
-    public Reservation(Long id, Long memberId, LocalDate date, ReservationTime time, Long themeId, Long marketId) {
+    public Reservation(Long id, Long memberId, LocalDate date, ReservationTime time, Long themeId, Long storeId) {
         validateMemberId(memberId);
         validateDate(date);
         validateTime(time);
         validateThemeId(themeId);
-        validateMarketId(marketId);
+        validateStoreId(storeId);
 
         this.id = id;
         this.memberId = memberId;
         this.date = date;
         this.time = time;
         this.themeId = themeId;
-        this.marketId = marketId;
+        this.storeId = storeId;
     }
 
     public Long getId() {
@@ -47,13 +47,13 @@ public class Reservation {
         return themeId;
     }
 
-    public Long getMarketId() {
-        return marketId;
+    public Long getStoreId() {
+        return storeId;
     }
 
-    public void validateMarketOwnership(Member member) {
-        if (!this.marketId.equals(member.getMarketId())) {
-            throw new WrongMarketAccessException();
+    public void validateStoreOwnership(Member member) {
+        if (!this.storeId.equals(member.getStoreId())) {
+            throw new WrongStoreAccessException();
         }
     }
 
@@ -89,11 +89,11 @@ public class Reservation {
         }
     }
 
-    private void validateMarketId(Long marketId) {
-        if (marketId == null) {
+    private void validateStoreId(Long storeId) {
+        if (storeId == null) {
             throw new IllegalArgumentException("매장 ID는 비어 있을 수 없습니다.");
         }
-        if (marketId <= 0) {
+        if (storeId <= 0) {
             throw new IllegalArgumentException("매장 ID는 양수여야 합니다.");
         }
     }

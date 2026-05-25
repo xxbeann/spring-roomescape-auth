@@ -26,7 +26,7 @@ import roomescape.exception.ReservationAlreadyExistsException;
 import roomescape.exception.ReservationNotFoundException;
 import roomescape.exception.ReservationOwnerMismatchException;
 import roomescape.exception.ReservationTimeNotFoundException;
-import roomescape.exception.WrongMarketAccessException;
+import roomescape.exception.WrongStoreAccessException;
 
 public class ReservationServiceTest {
 
@@ -226,9 +226,9 @@ public class ReservationServiceTest {
     @Test
     void 매니저가_자기_매장_예약을_삭제할_수_있다() {
         Long reservationId = 1L;
-        Long marketId = 1L;
+        Long storeId = 1L;
         Member gangnamManager = new Member(
-                10L, "gangnam@email.com", "password", "강남매니저", Role.MANAGER, marketId);
+                10L, "gangnam@email.com", "password", "강남매니저", Role.MANAGER, storeId);
 
         when(reservationDao.findReservationById(reservationId))
                 .thenReturn(new Reservation(
@@ -237,7 +237,7 @@ public class ReservationServiceTest {
                         LocalDate.now().plusDays(1),
                         new ReservationTime(1L, LocalTime.of(10, 0)),
                         1L,
-                        marketId
+                        storeId
                 ));
 
         assertThatCode(() -> reservationService.deleteByManager(reservationId, gangnamManager))
@@ -263,7 +263,7 @@ public class ReservationServiceTest {
                 ));
 
         assertThatThrownBy(() -> reservationService.deleteByManager(reservationId, hongdaeManager))
-                .isInstanceOf(WrongMarketAccessException.class);
+                .isInstanceOf(WrongStoreAccessException.class);
     }
 
     @Test
@@ -280,22 +280,22 @@ public class ReservationServiceTest {
     }
 
     @Test
-    void findByMarketId는_DAO에_위임한다() {
-        Long marketId = 1L;
+    void findByStoreId는_DAO에_위임한다() {
+        Long storeId = 1L;
         Reservation reservation = new Reservation(
                 1L,
                 BROWN_ID,
                 LocalDate.now().plusDays(1),
                 new ReservationTime(1L, LocalTime.of(10, 0)),
                 1L,
-                marketId
+                storeId
         );
-        when(reservationDao.findByMarketId(marketId)).thenReturn(List.of(reservation));
+        when(reservationDao.findByStoreId(storeId)).thenReturn(List.of(reservation));
 
-        List<Reservation> result = reservationService.findByMarketId(marketId);
+        List<Reservation> result = reservationService.findByStoreId(storeId);
 
         assertThat(result).hasSize(1);
-        verify(reservationDao).findByMarketId(marketId);
+        verify(reservationDao).findByStoreId(storeId);
     }
 
     @Test
@@ -347,6 +347,6 @@ public class ReservationServiceTest {
 
         assertThatThrownBy(() -> reservationService.updateByManager(
                 reservationId, futureDate, newTimeId, hongdaeManager))
-                .isInstanceOf(WrongMarketAccessException.class);
+                .isInstanceOf(WrongStoreAccessException.class);
     }
 }

@@ -45,7 +45,7 @@ public class ReservationController {
                 reservationCreateRequest.date(),
                 reservationCreateRequest.timeId(),
                 reservationCreateRequest.themeId(),
-                reservationCreateRequest.marketId()
+                reservationCreateRequest.storeId()
         );
         ReservationResponse reservationResponse = ReservationResponse.from(savedReservation);
         return ResponseEntity.created(URI.create("/api/v1/reservations/" + reservationResponse.id()))

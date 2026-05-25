@@ -15,20 +15,20 @@ import org.springframework.test.context.jdbc.SqlMergeMode.MergeMode;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @Sql("/cleanup.sql")
 @SqlMergeMode(MergeMode.MERGE)
-public class MarketControllerTest {
+public class StoreControllerTest {
 
-    private static final String INSERT_THREE_MARKETS_SQL = """
-            INSERT INTO market (id, name)
+    private static final String INSERT_THREE_STORES_SQL = """
+            INSERT INTO store (id, name)
             VALUES (1, '강남점'),
                    (2, '홍대점'),
                    (3, '판교점');
             """;
 
     @Test
-    @Sql(statements = INSERT_THREE_MARKETS_SQL)
+    @Sql(statements = INSERT_THREE_STORES_SQL)
     void 매장_목록을_조회한다() {
         RestAssured.given().log().all()
-                .when().get("/api/v1/markets")
+                .when().get("/api/v1/stores")
                 .then().log().all()
                 .statusCode(200)
                 .body("size()", is(3))
@@ -38,17 +38,17 @@ public class MarketControllerTest {
     @Test
     void 매장이_없으면_빈_목록을_반환한다() {
         RestAssured.given().log().all()
-                .when().get("/api/v1/markets")
+                .when().get("/api/v1/stores")
                 .then().log().all()
                 .statusCode(200)
                 .body("size()", is(0));
     }
 
     @Test
-    @Sql(statements = INSERT_THREE_MARKETS_SQL)
+    @Sql(statements = INSERT_THREE_STORES_SQL)
     void 매장_목록은_비로그인도_접근_가능하다() {
         RestAssured.given().log().all()
-                .when().get("/api/v1/markets")
+                .when().get("/api/v1/stores")
                 .then().log().all()
                 .statusCode(200);
     }

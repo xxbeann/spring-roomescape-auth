@@ -1,13 +1,13 @@
 package roomescape.domain;
 
-public class Market {
+public class Store {
 
     private static final int MAX_NAME_LENGTH = 50;
 
     private final Long id;
     private final String name;
 
-    public Market(Long id, String name) {
+    public Store(Long id, String name) {
         validateName(name);
 
         this.id = id;

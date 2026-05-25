@@ -20,6 +20,6 @@ public record ReservationCreateRequest(
 
         @NotNull
         @Positive
-        Long marketId
+        Long storeId
 ) {
 }

@@ -20,16 +20,16 @@ import org.springframework.test.context.jdbc.SqlMergeMode.MergeMode;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @Sql("/cleanup.sql")
 @SqlMergeMode(MergeMode.MERGE)
-public class AdminMarketReservationControllerTest {
+public class AdminStoreReservationControllerTest {
 
-    private static final String INSERT_TWO_MARKETS_SQL = """
-            INSERT INTO market (id, name)
+    private static final String INSERT_TWO_STORES_SQL = """
+            INSERT INTO store (id, name)
             VALUES (1, '강남점'),
                    (2, '홍대점');
             """;
 
     private static final String INSERT_MEMBERS_SQL = """
-            INSERT INTO member (id, email, password, name, role, market_id)
+            INSERT INTO member (id, email, password, name, role, store_id)
             VALUES (1, 'gangnam@email.com', 'password', '강남매니저', 'MANAGER', 1),
                    (2, 'hongdae@email.com', 'password', '홍대매니저', 'MANAGER', 2),
                    (3, 'user@email.com', 'password', '일반유저', 'USER', NULL);
@@ -53,7 +53,7 @@ public class AdminMarketReservationControllerTest {
             """;
 
     private static final String INSERT_TWO_RESERVATIONS_SQL = """
-            INSERT INTO reservation (id, member_id, date, time_id, theme_id, market_id)
+            INSERT INTO reservation (id, member_id, date, time_id, theme_id, store_id)
             VALUES (1, 3, '2026-12-01', 1, 1, 1),
                    (2, 3, '2026-12-02', 1, 1, 2);
             """;
@@ -68,7 +68,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL,
                 INSERT_SINGLE_TIME_SQL,
                 INSERT_SINGLE_THEME_SQL,
@@ -79,7 +79,7 @@ public class AdminMarketReservationControllerTest {
 
             RestAssured.given().log().all()
                     .header("Cookie", cookie)
-                    .when().get("/api/v1/admin/market/reservations")
+                    .when().get("/api/v1/admin/store/reservations")
                     .then().log().all()
                     .statusCode(200)
                     .body("size()", is(1))
@@ -89,7 +89,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL,
                 INSERT_SINGLE_TIME_SQL,
                 INSERT_SINGLE_THEME_SQL,
@@ -100,7 +100,7 @@ public class AdminMarketReservationControllerTest {
 
             RestAssured.given().log().all()
                     .header("Cookie", cookie)
-                    .when().get("/api/v1/admin/market/reservations")
+                    .when().get("/api/v1/admin/store/reservations")
                     .then().log().all()
                     .statusCode(200)
                     .body("size()", is(1))
@@ -110,7 +110,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL
         })
         void 일반_사용자가_조회하면_403_AUTH403_001을_반환한다() {
@@ -118,7 +118,7 @@ public class AdminMarketReservationControllerTest {
 
             RestAssured.given().log().all()
                     .header("Cookie", cookie)
-                    .when().get("/api/v1/admin/market/reservations")
+                    .when().get("/api/v1/admin/store/reservations")
                     .then().log().all()
                     .statusCode(403)
                     .body("errorCode", is("AUTH403_001"));
@@ -127,7 +127,7 @@ public class AdminMarketReservationControllerTest {
         @Test
         void 비로그인으로_조회하면_401_AUTH401_002를_반환한다() {
             RestAssured.given().log().all()
-                    .when().get("/api/v1/admin/market/reservations")
+                    .when().get("/api/v1/admin/store/reservations")
                     .then().log().all()
                     .statusCode(401)
                     .body("errorCode", is("AUTH401_002"));
@@ -137,7 +137,7 @@ public class AdminMarketReservationControllerTest {
         void 잘못된_토큰으로_조회하면_401_AUTH401_003을_반환한다() {
             RestAssured.given().log().all()
                     .auth().oauth2("invalid.jwt.token")
-                    .when().get("/api/v1/admin/market/reservations")
+                    .when().get("/api/v1/admin/store/reservations")
                     .then().log().all()
                     .statusCode(401)
                     .body("errorCode", is("AUTH401_003"));
@@ -149,7 +149,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL,
                 INSERT_SINGLE_TIME_SQL,
                 INSERT_SINGLE_THEME_SQL,
@@ -160,14 +160,14 @@ public class AdminMarketReservationControllerTest {
 
             RestAssured.given().log().all()
                     .header("Cookie", cookie)
-                    .when().delete("/api/v1/admin/market/reservations/1")
+                    .when().delete("/api/v1/admin/store/reservations/1")
                     .then().log().all()
                     .statusCode(204);
         }
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL,
                 INSERT_SINGLE_TIME_SQL,
                 INSERT_SINGLE_THEME_SQL,
@@ -178,7 +178,7 @@ public class AdminMarketReservationControllerTest {
 
             RestAssured.given().log().all()
                     .header("Cookie", cookie)
-                    .when().delete("/api/v1/admin/market/reservations/2")
+                    .when().delete("/api/v1/admin/store/reservations/2")
                     .then().log().all()
                     .statusCode(403)
                     .body("errorCode", is("AUTH403_002"));
@@ -186,7 +186,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL,
                 INSERT_SINGLE_TIME_SQL,
                 INSERT_SINGLE_THEME_SQL
@@ -196,7 +196,7 @@ public class AdminMarketReservationControllerTest {
 
             RestAssured.given().log().all()
                     .header("Cookie", cookie)
-                    .when().delete("/api/v1/admin/market/reservations/999")
+                    .when().delete("/api/v1/admin/store/reservations/999")
                     .then().log().all()
                     .statusCode(404)
                     .body("errorCode", is("RESERVATION404_001"));
@@ -204,7 +204,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL
         })
         void 일반_사용자가_삭제하려_하면_403_AUTH403_001을_반환한다() {
@@ -212,7 +212,7 @@ public class AdminMarketReservationControllerTest {
 
             RestAssured.given().log().all()
                     .header("Cookie", cookie)
-                    .when().delete("/api/v1/admin/market/reservations/1")
+                    .when().delete("/api/v1/admin/store/reservations/1")
                     .then().log().all()
                     .statusCode(403)
                     .body("errorCode", is("AUTH403_001"));
@@ -221,7 +221,7 @@ public class AdminMarketReservationControllerTest {
         @Test
         void 비로그인으로_삭제하려_하면_401_AUTH401_002를_반환한다() {
             RestAssured.given().log().all()
-                    .when().delete("/api/v1/admin/market/reservations/1")
+                    .when().delete("/api/v1/admin/store/reservations/1")
                     .then().log().all()
                     .statusCode(401)
                     .body("errorCode", is("AUTH401_002"));
@@ -233,7 +233,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL,
                 INSERT_TWO_TIMES_SQL,
                 INSERT_SINGLE_THEME_SQL,
@@ -246,7 +246,7 @@ public class AdminMarketReservationControllerTest {
                     .header("Cookie", cookie)
                     .contentType(ContentType.JSON)
                     .body(updateParams("2026-12-15", 2L))
-                    .when().patch("/api/v1/admin/market/reservations/1")
+                    .when().patch("/api/v1/admin/store/reservations/1")
                     .then().log().all()
                     .statusCode(200)
                     .body("id", is(1));
@@ -254,7 +254,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL,
                 INSERT_TWO_TIMES_SQL,
                 INSERT_SINGLE_THEME_SQL,
@@ -267,7 +267,7 @@ public class AdminMarketReservationControllerTest {
                     .header("Cookie", cookie)
                     .contentType(ContentType.JSON)
                     .body(updateParams("2026-12-15", 2L))
-                    .when().patch("/api/v1/admin/market/reservations/2")
+                    .when().patch("/api/v1/admin/store/reservations/2")
                     .then().log().all()
                     .statusCode(403)
                     .body("errorCode", is("AUTH403_002"));
@@ -275,7 +275,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL,
                 INSERT_TWO_TIMES_SQL,
                 INSERT_SINGLE_THEME_SQL
@@ -287,7 +287,7 @@ public class AdminMarketReservationControllerTest {
                     .header("Cookie", cookie)
                     .contentType(ContentType.JSON)
                     .body(updateParams("2026-12-15", 2L))
-                    .when().patch("/api/v1/admin/market/reservations/999")
+                    .when().patch("/api/v1/admin/store/reservations/999")
                     .then().log().all()
                     .statusCode(404)
                     .body("errorCode", is("RESERVATION404_001"));
@@ -295,7 +295,7 @@ public class AdminMarketReservationControllerTest {
 
         @Test
         @Sql(statements = {
-                INSERT_TWO_MARKETS_SQL,
+                INSERT_TWO_STORES_SQL,
                 INSERT_MEMBERS_SQL,
                 INSERT_TWO_TIMES_SQL,
                 INSERT_SINGLE_THEME_SQL,
@@ -308,7 +308,7 @@ public class AdminMarketReservationControllerTest {
                     .header("Cookie", cookie)
                     .contentType(ContentType.JSON)
                     .body(updateParams("2026-12-15", 2L))
-                    .when().patch("/api/v1/admin/market/reservations/1")
+                    .when().patch("/api/v1/admin/store/reservations/1")
                     .then().log().all()
                     .statusCode(403)
                     .body("errorCode", is("AUTH403_001"));
@@ -319,7 +319,7 @@ public class AdminMarketReservationControllerTest {
             RestAssured.given().log().all()
                     .contentType(ContentType.JSON)
                     .body(updateParams("2026-12-15", 2L))
-                    .when().patch("/api/v1/admin/market/reservations/1")
+                    .when().patch("/api/v1/admin/store/reservations/1")
                     .then().log().all()
                     .statusCode(401)
                     .body("errorCode", is("AUTH401_002"));

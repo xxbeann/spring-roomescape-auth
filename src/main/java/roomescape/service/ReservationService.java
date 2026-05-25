@@ -39,11 +39,11 @@ public class ReservationService {
     }
 
     @Transactional
-    public Reservation createReservation(Long memberId, LocalDate date, Long timeId, Long themeId, Long marketId) {
+    public Reservation createReservation(Long memberId, LocalDate date, Long timeId, Long themeId, Long storeId) {
         LocalTime startAt = reservationTimeDao.findReservationTimeById(timeId).getStartAt();
         validatePastReservationCreate(date, startAt);
         try {
-            Long id = reservationDao.insertWithKeyHolder(memberId, date, timeId, themeId, marketId);
+            Long id = reservationDao.insertWithKeyHolder(memberId, date, timeId, themeId, storeId);
             return reservationDao.findReservationById(id);
         } catch (DuplicateKeyException e) {
             throw new ReservationAlreadyExistsException();
@@ -75,7 +75,7 @@ public class ReservationService {
     public Reservation updateByManager(Long reservationId, LocalDate date, Long timeId, Member manager) {
         ReservationTime reservationTime = findReservationTime(timeId);
         Reservation reservation = findReservation(reservationId);
-        reservation.validateMarketOwnership(manager);
+        reservation.validateStoreOwnership(manager);
         validatePastReservationCreate(date, reservationTime.getStartAt());
         try {
             reservationDao.updateById(reservationId, date, timeId);
@@ -85,14 +85,14 @@ public class ReservationService {
         return reservationDao.findReservationById(reservationId);
     }
 
-    public List<Reservation> findByMarketId(Long marketId) {
-        return reservationDao.findByMarketId(marketId);
+    public List<Reservation> findByStoreId(Long storeId) {
+        return reservationDao.findByStoreId(storeId);
     }
 
     @Transactional
     public void deleteByManager(Long reservationId, Member manager) {
         Reservation reservation = findReservation(reservationId);
-        reservation.validateMarketOwnership(manager);
+        reservation.validateStoreOwnership(manager);
         reservationDao.delete(reservationId);
     }
 

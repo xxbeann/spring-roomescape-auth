@@ -706,8 +706,8 @@
             </div>
 
             <div class="field">
-                <label class="field-label" for="userMarketSelect">매장</label>
-                <select id="userMarketSelect">
+                <label class="field-label" for="userStoreSelect">매장</label>
+                <select id="userStoreSelect">
                     <option value="">매장을 선택하세요</option>
                 </select>
             </div>
@@ -756,7 +756,7 @@
         <header class="topbar">
             <div class="brand">
                 <h1 class="brand-title">매장 관리</h1>
-                <p class="brand-subtitle"><span id="managerMarketName">-</span>의 예약을 관리합니다.</p>
+                <p class="brand-subtitle"><span id="managerStoreName">-</span>의 예약을 관리합니다.</p>
             </div>
             <div class="user-chip">
                 <span class="badge">매니저</span>
@@ -823,11 +823,11 @@
 
     // ─── State ───────────────────────────────
     const state = {
-        user: null,            // { id, email, name, role, marketId }
-        markets: [],           // [{ id, name }]
+        user: null,            // { id, email, name, role, storeId }
+        stores: [],           // [{ id, name }]
         themes: [],            // [{ id, name, description, imgUrl }]
         allTimes: [],          // [{ id, startAt }] — full list of times
-        userSelectedMarketId: null,
+        userSelectedStoreId: null,
         userSelectedThemeId: null,
         userSelectedDate: null,
         userSelectedTimeId: null,
@@ -851,7 +851,7 @@
     const userStatus = document.getElementById("userStatus");
     const popularRow = document.getElementById("popularRow");
     const popularEmpty = document.getElementById("popularEmpty");
-    const userMarketSelect = document.getElementById("userMarketSelect");
+    const userStoreSelect = document.getElementById("userStoreSelect");
     const userThemeGrid = document.getElementById("userThemeGrid");
     const userThemeEmpty = document.getElementById("userThemeEmpty");
     const userReservationDate = document.getElementById("userReservationDate");
@@ -864,7 +864,7 @@
 
     // Manager view
     const managerName = document.getElementById("managerName");
-    const managerMarketName = document.getElementById("managerMarketName");
+    const managerStoreName = document.getElementById("managerStoreName");
     const managerLogoutButton = document.getElementById("managerLogoutButton");
     const managerStatus = document.getElementById("managerStatus");
     const managerTableBody = document.getElementById("managerTableBody");
@@ -997,8 +997,8 @@
         }
         if (state.user.role === "MANAGER") {
             managerName.textContent = state.user.name + "님";
-            const market = state.markets.find(m => m.id === state.user.marketId);
-            managerMarketName.textContent = market ? market.name : ("매장 #" + state.user.marketId);
+            const store = state.stores.find(m => m.id === state.user.storeId);
+            managerStoreName.textContent = store ? store.name : ("매장 #" + state.user.storeId);
             managerView.classList.remove("hidden");
             loadManagerReservations();
         } else {
@@ -1053,27 +1053,27 @@
         } catch { /* ignore */ }
         state.user = null;
         // 상태 초기화
-        state.userSelectedMarketId = null;
+        state.userSelectedStoreId = null;
         state.userSelectedThemeId = null;
         state.userSelectedDate = null;
         state.userSelectedTimeId = null;
         renderView();
     }
 
-    // ─── Markets + Themes load (shared) ──────
-    async function loadMarketsAndThemes() {
-        const [markets, themes] = await Promise.all([
-            getJson("/api/v1/markets"),
+    // ─── Stores + Themes load (shared) ──────
+    async function loadStoresAndThemes() {
+        const [stores, themes] = await Promise.all([
+            getJson("/api/v1/stores"),
             getJson("/api/v1/themes"),
         ]);
-        state.markets = markets;
+        state.stores = stores;
         state.themes = themes;
     }
 
     // ─── User view ───────────────────────────
     async function initUserView() {
         clearStatus(userStatus);
-        renderMarketSelect();
+        renderStoreSelect();
         renderThemeGrid();
         renderPopularThemes();
         userReservationDate.value = "";
@@ -1082,11 +1082,11 @@
         updateReserveButton();
     }
 
-    function renderMarketSelect() {
-        userMarketSelect.innerHTML = '<option value="">매장을 선택하세요</option>' +
-            state.markets.map(m => `<option value="${m.id}">${m.name}</option>`).join("");
-        if (state.userSelectedMarketId) {
-            userMarketSelect.value = String(state.userSelectedMarketId);
+    function renderStoreSelect() {
+        userStoreSelect.innerHTML = '<option value="">매장을 선택하세요</option>' +
+            state.stores.map(m => `<option value="${m.id}">${m.name}</option>`).join("");
+        if (state.userSelectedStoreId) {
+            userStoreSelect.value = String(state.userSelectedStoreId);
         }
     }
 
@@ -1191,7 +1191,7 @@
     }
 
     function updateReserveButton() {
-        const ok = state.userSelectedMarketId && state.userSelectedThemeId
+        const ok = state.userSelectedStoreId && state.userSelectedThemeId
             && userReservationDate.value && state.userSelectedTimeId;
         userReserveButton.disabled = !ok;
     }
@@ -1201,7 +1201,7 @@
             date: userReservationDate.value,
             timeId: state.userSelectedTimeId,
             themeId: state.userSelectedThemeId,
-            marketId: state.userSelectedMarketId,
+            storeId: state.userSelectedStoreId,
         };
         try {
             await postJson("/api/v1/reservations", body);
@@ -1260,7 +1260,7 @@
     async function loadManagerReservations() {
         clearStatus(managerStatus);
         try {
-            const reservations = await getJson("/api/v1/admin/market/reservations");
+            const reservations = await getJson("/api/v1/admin/store/reservations");
             if (!reservations.length) {
                 managerTableBody.innerHTML = "";
                 managerEmpty.classList.remove("hidden");
@@ -1291,7 +1291,7 @@
                 el.addEventListener("click", async () => {
                     if (!confirm(`예약 #${el.dataset.deleteId}을(를) 삭제하시겠습니까?`)) return;
                     try {
-                        await deleteResource(`/api/v1/admin/market/reservations/${el.dataset.deleteId}`);
+                        await deleteResource(`/api/v1/admin/store/reservations/${el.dataset.deleteId}`);
                         setStatus(managerStatus, "success", "예약을 삭제했습니다.");
                         await loadManagerReservations();
                     } catch (e) {
@@ -1330,7 +1330,7 @@
             return;
         }
         try {
-            await patchJson(`/api/v1/admin/market/reservations/${state.editingReservationId}`, {
+            await patchJson(`/api/v1/admin/store/reservations/${state.editingReservationId}`, {
                 date,
                 timeId: Number(timeId),
             });
@@ -1352,7 +1352,7 @@
     // ─── Init ────────────────────────────────
     async function init() {
         await tryLoadCurrentUser();
-        await Promise.all([loadMarketsAndThemes(), loadAllTimes()]);
+        await Promise.all([loadStoresAndThemes(), loadAllTimes()]);
         renderView();
     }
 
@@ -1365,8 +1365,8 @@
     userLogoutButton.addEventListener("click", logout);
     managerLogoutButton.addEventListener("click", logout);
 
-    userMarketSelect.addEventListener("change", () => {
-        state.userSelectedMarketId = userMarketSelect.value ? Number(userMarketSelect.value) : null;
+    userStoreSelect.addEventListener("change", () => {
+        state.userSelectedStoreId = userStoreSelect.value ? Number(userStoreSelect.value) : null;
         updateReserveButton();
     });
     userReservationDate.addEventListener("change", () => {

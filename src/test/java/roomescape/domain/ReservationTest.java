@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
 import roomescape.auth.Role;
-import roomescape.exception.WrongMarketAccessException;
+import roomescape.exception.WrongStoreAccessException;
 
 public class ReservationTest {
 
@@ -87,7 +87,7 @@ public class ReservationTest {
     }
 
     @Test
-    void marketId가_null이면_예약을_생성할_수_없다() {
+    void storeId가_null이면_예약을_생성할_수_없다() {
         assertThatThrownBy(() -> new Reservation(
                 1L,
                 1L,
@@ -100,7 +100,7 @@ public class ReservationTest {
     }
 
     @Test
-    void marketId가_0이하면_예약을_생성할_수_없다() {
+    void storeId가_0이하면_예약을_생성할_수_없다() {
         assertThatThrownBy(() -> new Reservation(
                 1L,
                 1L,
@@ -115,30 +115,30 @@ public class ReservationTest {
     @Test
     void 같은_매장_매니저는_예약을_수정할_수_있다() {
         Reservation reservation = new Reservation(1L, 1L, SAMPLE_DATE, SAMPLE_TIME, 1L, 1L);
-        Member sameMarketManager = new Member(
+        Member sameStoreManager = new Member(
                 4L, "manager-gangnam@email.com", "password", "강남매니저", Role.MANAGER, 1L);
 
-        assertThatCode(() -> reservation.validateMarketOwnership(sameMarketManager))
+        assertThatCode(() -> reservation.validateStoreOwnership(sameStoreManager))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void 다른_매장_매니저는_예약을_수정할_수_없다() {
         Reservation reservation = new Reservation(1L, 1L, SAMPLE_DATE, SAMPLE_TIME, 1L, 1L);
-        Member otherMarketManager = new Member(
+        Member otherStoreManager = new Member(
                 5L, "manager-hongdae@email.com", "password", "홍대매니저", Role.MANAGER, 2L);
 
-        assertThatThrownBy(() -> reservation.validateMarketOwnership(otherMarketManager))
-                .isInstanceOf(WrongMarketAccessException.class);
+        assertThatThrownBy(() -> reservation.validateStoreOwnership(otherStoreManager))
+                .isInstanceOf(WrongStoreAccessException.class);
     }
 
     @Test
-    void marketId가_없는_일반_사용자는_예약을_수정할_수_없다() {
+    void storeId가_없는_일반_사용자는_예약을_수정할_수_없다() {
         Reservation reservation = new Reservation(1L, 1L, SAMPLE_DATE, SAMPLE_TIME, 1L, 1L);
         Member regularUser = new Member(
                 2L, "brown@email.com", "password", "브라운", Role.USER, null);
 
-        assertThatThrownBy(() -> reservation.validateMarketOwnership(regularUser))
-                .isInstanceOf(WrongMarketAccessException.class);
+        assertThatThrownBy(() -> reservation.validateStoreOwnership(regularUser))
+                .isInstanceOf(WrongStoreAccessException.class);
     }
 }

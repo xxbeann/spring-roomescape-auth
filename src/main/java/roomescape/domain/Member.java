@@ -14,21 +14,21 @@ public class Member {
     private final String password;
     private final String name;
     private final Role role;
-    private final Long marketId;
+    private final Long storeId;
 
-    public Member(Long id, String email, String password, String name, Role role, Long marketId) {
+    public Member(Long id, String email, String password, String name, Role role, Long storeId) {
         validateEmail(email);
         validatePassword(password);
         validateName(name);
         validateRole(role);
-        validateMarketId(marketId);
+        validateStoreId(storeId);
 
         this.id = id;
         this.email = email;
         this.password = password;
         this.name = name;
         this.role = role;
-        this.marketId = marketId;
+        this.storeId = storeId;
     }
 
     public Long getId() {
@@ -47,8 +47,8 @@ public class Member {
         return role;
     }
 
-    public Long getMarketId() {
-        return marketId;
+    public Long getStoreId() {
+        return storeId;
     }
 
     public boolean matchesPassword(String rawPassword) {
@@ -88,8 +88,8 @@ public class Member {
         }
     }
 
-    private void validateMarketId(Long marketId) {
-        if (marketId != null && marketId <= 0) {
+    private void validateStoreId(Long storeId) {
+        if (storeId != null && storeId <= 0) {
             throw new IllegalArgumentException("매장 ID는 양수여야 합니다.");
         }
     }

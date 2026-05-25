@@ -8,7 +8,7 @@ public record MemberResponse(
         String email,
         String name,
         Role role,
-        Long marketId
+        Long storeId
 ) {
     public static MemberResponse from(Member member) {
         return new MemberResponse(
@@ -16,7 +16,7 @@ public record MemberResponse(
                 member.getEmail(),
                 member.getName(),
                 member.getRole(),
-                member.getMarketId()
+                member.getStoreId()
         );
     }
 }

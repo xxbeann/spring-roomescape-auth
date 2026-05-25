@@ -30,7 +30,7 @@ public class ReservationDao {
                     t.id as time_id,
                     t.start_at,
                     r.theme_id,
-                    r.market_id
+                    r.store_id
                 FROM reservation as r
                 INNER JOIN reservation_time as t
                   ON r.time_id = t.id
@@ -50,7 +50,7 @@ public class ReservationDao {
                     t.id as time_id,
                     t.start_at,
                     r.theme_id,
-                    r.market_id
+                    r.store_id
                 FROM reservation as r
                 INNER JOIN reservation_time as t
                   ON r.time_id = t.id
@@ -64,7 +64,7 @@ public class ReservationDao {
         return reservations;
     }
 
-    public List<Reservation> findByMarketId(Long marketId) {
+    public List<Reservation> findByStoreId(Long storeId) {
         String sql = """
                 SELECT
                     r.id as reservation_id,
@@ -73,16 +73,16 @@ public class ReservationDao {
                     t.id as time_id,
                     t.start_at,
                     r.theme_id,
-                    r.market_id
+                    r.store_id
                 FROM reservation as r
                 INNER JOIN reservation_time as t
                   ON r.time_id = t.id
-                WHERE r.market_id = ?
+                WHERE r.store_id = ?
                 """;
         List<Reservation> reservations = jdbcTemplate.query(
                 sql,
                 reservationRowMapper(),
-                marketId
+                storeId
         );
         return reservations;
     }
@@ -96,7 +96,7 @@ public class ReservationDao {
                     t.id as time_id,
                     t.start_at,
                     r.theme_id,
-                    r.market_id
+                    r.store_id
                 FROM reservation as r
                 INNER JOIN reservation_time as t
                   ON r.time_id = t.id
@@ -113,8 +113,8 @@ public class ReservationDao {
         return jdbcTemplate.update(sql, date.toString(), timeId, id);
     }
 
-    public Long insertWithKeyHolder(Long memberId, LocalDate date, Long timeId, Long themeId, Long marketId) {
-        String sql = "insert into reservation (member_id, date, time_id, theme_id, market_id) values (?, ?, ?, ?, ?)";
+    public Long insertWithKeyHolder(Long memberId, LocalDate date, Long timeId, Long themeId, Long storeId) {
+        String sql = "insert into reservation (member_id, date, time_id, theme_id, store_id) values (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -126,7 +126,7 @@ public class ReservationDao {
             ps.setString(2, date.toString());
             ps.setLong(3, timeId);
             ps.setLong(4, themeId);
-            ps.setLong(5, marketId);
+            ps.setLong(5, storeId);
             return ps;
         }, keyHolder);
 
@@ -148,7 +148,7 @@ public class ReservationDao {
                             LocalTime.parse(resultSet.getString("start_at"))
                     ),
                     resultSet.getLong("theme_id"),
-                    resultSet.getLong("market_id")
+                    resultSet.getLong("store_id")
             );
             return newReservation;
         };

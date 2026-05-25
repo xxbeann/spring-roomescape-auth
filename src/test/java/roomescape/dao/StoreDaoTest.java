@@ -10,31 +10,31 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
-import roomescape.domain.Market;
+import roomescape.domain.Store;
 
 @JdbcTest
 @ActiveProfiles("test")
-@Import(MarketDao.class)
-public class MarketDaoTest {
+@Import(StoreDao.class)
+public class StoreDaoTest {
 
-    private static final String INSERT_THREE_MARKETS_SQL = """
-            INSERT INTO market (id, name)
+    private static final String INSERT_THREE_STORES_SQL = """
+            INSERT INTO store (id, name)
             VALUES (1, '강남점'),
                    (2, '홍대점'),
                    (3, '판교점');
             """;
 
     @Autowired
-    private MarketDao marketDao;
+    private StoreDao storeDao;
 
     @Test
-    @Sql(statements = INSERT_THREE_MARKETS_SQL)
+    @Sql(statements = INSERT_THREE_STORES_SQL)
     void 모든_매장을_조회한다() {
-        List<Market> markets = marketDao.findAllMarkets();
+        List<Store> stores = storeDao.findAllStores();
 
-        assertThat(markets).hasSize(3);
-        assertThat(markets)
-                .extracting(Market::getId, Market::getName)
+        assertThat(stores).hasSize(3);
+        assertThat(stores)
+                .extracting(Store::getId, Store::getName)
                 .containsExactlyInAnyOrder(
                         tuple(1L, "강남점"),
                         tuple(2L, "홍대점"),
@@ -43,18 +43,18 @@ public class MarketDaoTest {
     }
 
     @Test
-    @Sql(statements = INSERT_THREE_MARKETS_SQL)
+    @Sql(statements = INSERT_THREE_STORES_SQL)
     void ID로_매장을_조회한다() {
-        Market market = marketDao.findById(2L);
+        Store store = storeDao.findById(2L);
 
-        assertThat(market.getId()).isEqualTo(2L);
-        assertThat(market.getName()).isEqualTo("홍대점");
+        assertThat(store.getId()).isEqualTo(2L);
+        assertThat(store.getName()).isEqualTo("홍대점");
     }
 
     @Test
     void 매장이_없으면_빈_리스트를_반환한다() {
-        List<Market> markets = marketDao.findAllMarkets();
+        List<Store> stores = storeDao.findAllStores();
 
-        assertThat(markets).isEmpty();
+        assertThat(stores).isEmpty();
     }
 }

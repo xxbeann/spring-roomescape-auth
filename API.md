@@ -27,7 +27,7 @@
 인증된 요청에 대해서도 *권한*에 따라 거부될 수 있다. 인증 실패(`401`)와 인가 실패(`403`)는 명확히 구분된다.
 
 - 회원은 `USER`(일반 손님)와 `MANAGER`(매장 매니저) 역할 중 하나를 갖는다.
-- 매니저는 `market_id`가 부여되어 자기 매장 자원만 관리할 수 있다.
+- 매니저는 `store_id`가 부여되어 자기 매장 자원만 관리할 수 있다.
 - `@LoginMember(role = MANAGER)` 어노테이션이 붙은 엔드포인트는 `MANAGER` 권한이 없으면 `403` (`AUTH403_001`)을 반환한다.
 - 매니저가 *자기 매장이 아닌* 자원을 조작하려 하면 `403` (`AUTH403_002`)를 반환한다.
 
@@ -35,9 +35,9 @@
 
 | 분류 | API |
 | --- | --- |
-| **공개** | `POST /api/v1/auth/login`, `POST /api/v1/auth/login/token`, `POST /api/v1/auth/logout`, `GET /api/v1/themes`, `GET /api/v1/themes/popular`, `GET /api/v1/markets`, `GET /api/v1/reservations/times`, `GET /api/v1/reservations/times/availability` |
+| **공개** | `POST /api/v1/auth/login`, `POST /api/v1/auth/login/token`, `POST /api/v1/auth/logout`, `GET /api/v1/themes`, `GET /api/v1/themes/popular`, `GET /api/v1/stores`, `GET /api/v1/reservations/times`, `GET /api/v1/reservations/times/availability` |
 | **인증 필요 (모든 역할)** | `GET /api/v1/auth/me`, `GET /api/v1/reservations`, `POST /api/v1/reservations`, `PATCH /api/v1/reservations/{id}`, `DELETE /api/v1/reservations/{id}` |
-| **MANAGER 권한 필요** | `POST /api/v1/admin/themes`, `DELETE /api/v1/admin/themes/{id}`, `POST /api/v1/admin/times`, `DELETE /api/v1/admin/times/{id}`, `GET /api/v1/admin/market/reservations`, `PATCH /api/v1/admin/market/reservations/{id}`, `DELETE /api/v1/admin/market/reservations/{id}` |
+| **MANAGER 권한 필요** | `POST /api/v1/admin/themes`, `DELETE /api/v1/admin/themes/{id}`, `POST /api/v1/admin/times`, `DELETE /api/v1/admin/times/{id}`, `GET /api/v1/admin/store/reservations`, `PATCH /api/v1/admin/store/reservations/{id}`, `DELETE /api/v1/admin/store/reservations/{id}` |
 
 > 실제 인증 적용은 `AuthenticationConfig`의 인터셉터 등록 규칙(`addPathPatterns` + `excludePathPatterns`)을 따른다. 역할 기반 인가는 `LoginMemberArgumentResolver`가 `@LoginMember(role = ...)`를 읽어 처리한다.
 
@@ -146,11 +146,11 @@
   "email": "brown@email.com",
   "name": "브라운",
   "role": "USER",
-  "marketId": null
+  "storeId": null
 }
 ```
 
-매니저의 경우 `role`은 `"MANAGER"`, `marketId`는 자기 매장 ID로 채워진다.
+매니저의 경우 `role`은 `"MANAGER"`, `storeId`는 자기 매장 ID로 채워진다.
 
 #### 응답 필드
 
@@ -160,7 +160,7 @@
 | `email` | `String` | 이메일 |
 | `name` | `String` | 이름 |
 | `role` | `String` | `USER` 또는 `MANAGER` |
-| `marketId` | `Long` | 소속 매장 ID (USER는 `null`) |
+| `storeId` | `Long` | 소속 매장 ID (USER는 `null`) |
 
 #### 응답 코드
 
@@ -223,7 +223,7 @@
       "startAt": "10:00"
     },
     "themeId": 1,
-    "marketId": 1
+    "storeId": 1
   }
 ]
 ```
@@ -247,7 +247,7 @@
   "date": "2026-05-14",
   "timeId": 1,
   "themeId": 1,
-  "marketId": 1
+  "storeId": 1
 }
 ```
 
@@ -258,14 +258,14 @@
 | `date` | `String` | Y | 예약 날짜 |
 | `timeId` | `Long` | Y | 예약 시간 ID |
 | `themeId` | `Long` | Y | 테마 ID |
-| `marketId` | `Long` | Y | 매장 ID (예약할 매장) |
+| `storeId` | `Long` | Y | 매장 ID (예약할 매장) |
 
 #### 검증 규칙
 
 - `date`: null 불가, `yyyy-MM-dd` 형식
 - `timeId`: null 불가, 양수
 - `themeId`: null 불가, 양수
-- `marketId`: null 불가, 양수
+- `storeId`: null 불가, 양수
 - 지나간 날짜·시간 예약 불가
 - 같은 매장 + 날짜 + 시간 + 테마 중복 예약 불가 (다른 매장이면 같은 날짜·시간·테마 허용)
 
@@ -281,7 +281,7 @@
     "startAt": "10:00"
   },
   "themeId": 1,
-  "marketId": 1
+  "storeId": 1
 }
 ```
 
@@ -380,11 +380,11 @@
     "startAt": "11:00"
   },
   "themeId": 1,
-  "marketId": 1
+  "storeId": 1
 }
 ```
 
-> `marketId`는 변경할 수 없다. 매장 이동이 필요한 경우 기존 예약을 취소하고 새로 생성한다.
+> `storeId`는 변경할 수 없다. 매장 이동이 필요한 경우 기존 예약을 취소하고 새로 생성한다.
 
 #### 응답 코드
 
@@ -726,7 +726,7 @@
 
 ### 6-1. 매장 목록 조회
 
-- `GET /api/v1/markets`
+- `GET /api/v1/stores`
 - 공개
 
 #### 응답 예시
@@ -754,8 +754,8 @@
 
 ### 7-1. 자기 매장 예약 목록 조회
 
-- `GET /api/v1/admin/market/reservations`
-- 매니저 권한 필요. 매니저의 `marketId`로 자동 필터링되어 *본인 매장 예약만* 반환한다.
+- `GET /api/v1/admin/store/reservations`
+- 매니저 권한 필요. 매니저의 `storeId`로 자동 필터링되어 *본인 매장 예약만* 반환한다.
 
 #### 응답 예시
 
@@ -767,7 +767,7 @@
     "date": "2026-12-01",
     "time": { "id": 1, "startAt": "10:00" },
     "themeId": 1,
-    "marketId": 1
+    "storeId": 1
   }
 ]
 ```
@@ -790,7 +790,7 @@
 
 ### 7-2. 매장 예약 변경 (매니저)
 
-- `PATCH /api/v1/admin/market/reservations/{id}`
+- `PATCH /api/v1/admin/store/reservations/{id}`
 - 매니저 권한 필요. 자기 매장의 예약 날짜·시간을 변경한다.
 
 #### 경로 변수
@@ -819,7 +819,7 @@
 
 - `date`: null 불가, `yyyy-MM-dd` 형식
 - `timeId`: null 불가, 양수
-- **매니저는 자기 매장(`marketId` 일치) 예약만 변경할 수 있다.**
+- **매니저는 자기 매장(`storeId` 일치) 예약만 변경할 수 있다.**
 - 지나간 날짜·시간으로 변경 불가
 - 변경할 예약 시간이 존재해야 함
 
@@ -832,7 +832,7 @@
   "date": "2026-12-15",
   "time": { "id": 2, "startAt": "11:00" },
   "themeId": 1,
-  "marketId": 1
+  "storeId": 1
 }
 ```
 
@@ -860,7 +860,7 @@
 
 ### 7-3. 매장 예약 삭제 (매니저)
 
-- `DELETE /api/v1/admin/market/reservations/{id}`
+- `DELETE /api/v1/admin/store/reservations/{id}`
 - 매니저 권한 필요. 자기 매장의 예약을 삭제한다.
 
 #### 경로 변수
@@ -906,14 +906,14 @@
 | `GET` | `/api/v1/reservations/times/availability?date=&themeId=` | ❌ | 예약 가능 시간 조회 |
 | `GET` | `/api/v1/themes` | ❌ | 테마 목록 조회 |
 | `GET` | `/api/v1/themes/popular?from=&to=` | ❌ | 인기 테마 조회 |
-| `GET` | `/api/v1/markets` | ❌ | 매장 목록 조회 |
+| `GET` | `/api/v1/stores` | ❌ | 매장 목록 조회 |
 | `POST` | `/api/v1/admin/times` | 🔐 MANAGER | 예약 시간 생성 |
 | `DELETE` | `/api/v1/admin/times/{id}` | 🔐 MANAGER | 예약 시간 삭제 |
 | `POST` | `/api/v1/admin/themes` | 🔐 MANAGER | 테마 생성 |
 | `DELETE` | `/api/v1/admin/themes/{id}` | 🔐 MANAGER | 테마 삭제 |
-| `GET` | `/api/v1/admin/market/reservations` | 🔐 MANAGER | 자기 매장 예약 목록 |
-| `PATCH` | `/api/v1/admin/market/reservations/{id}` | 🔐 MANAGER | 자기 매장 예약 변경 |
-| `DELETE` | `/api/v1/admin/market/reservations/{id}` | 🔐 MANAGER | 자기 매장 예약 삭제 |
+| `GET` | `/api/v1/admin/store/reservations` | 🔐 MANAGER | 자기 매장 예약 목록 |
+| `PATCH` | `/api/v1/admin/store/reservations/{id}` | 🔐 MANAGER | 자기 매장 예약 변경 |
+| `DELETE` | `/api/v1/admin/store/reservations/{id}` | 🔐 MANAGER | 자기 매장 예약 삭제 |
 
 ## 인증 헤더 / 쿠키 사용 예시
 

@@ -356,8 +356,8 @@ Controller는 가능한 Response DTO를 반환한다.
 #### **3단계 - 인가 / 매장 매니저 권한**
 
 - [x] 회원에 `role`(USER / MANAGER) 개념을 도입한다.
-- [x] 매니저는 `market_id`로 자기 매장에 묶인다.
-- [x] 예약은 어떤 매장의 예약인지 식별할 수 있어야 한다 (`reservation.market_id`).
+- [x] 매니저는 `store_id`로 자기 매장에 묶인다.
+- [x] 예약은 어떤 매장의 예약인지 식별할 수 있어야 한다 (`reservation.store_id`).
 - [x] 매장 매니저는**자기 매장의 예약만** 조회·변경·삭제할 수 있다.
 - [x] 다른 매장의 예약에 접근하면 거부한다 (`403 AUTH403_002`).
 - [x] 매니저 권한이 없는 사용자가 매니저 API에 접근하면 거부한다 (`403 AUTH403_001`).
@@ -369,7 +369,7 @@ Controller는 가능한 Response DTO를 반환한다.
 | --- | --- | --- |
 | 토큰 유효성 (인증) | `LoginCheckInterceptor` | JWT 서명·형식 검증 |
 | 역할 (role check) | `LoginMemberArgumentResolver` | `@LoginMember(role = MANAGER)` 어노테이션 |
-| 자원 범위 (marketId 비교) | `Reservation` 도메인 | `reservation.validateMarketOwnership(member)` |
+| 자원 범위 (storeId 비교) | `Reservation` 도메인 | `reservation.validateStoreOwnership(member)` |
 
 - **Resolver**는 어노테이션에 명시된 role을 검증하고 Member를 주입한다.
 - **도메인**은 자기 자신의 무결성(다른 매장 매니저가 수정 못 함)을 자기-방어한다.
@@ -377,36 +377,36 @@ Controller는 가능한 Response DTO를 반환한다.
 
 #### API 명세서
 
-##### Markets - 01
+##### Stores - 01
 
 - API 설명: 매장 목록을 조회한다.
-- URI: `/api/v1/markets`
+- URI: `/api/v1/stores`
 - Method: `GET`
 - 인증: 공개
 
-##### Admin Market Reservations - 01 ~ 03
+##### Admin Store Reservations - 01 ~ 03
 
-- 자기 매장 예약 조회: `GET /api/v1/admin/market/reservations`
-- 자기 매장 예약 변경: `PATCH /api/v1/admin/market/reservations/{id}`
-- 자기 매장 예약 삭제: `DELETE /api/v1/admin/market/reservations/{id}`
+- 자기 매장 예약 조회: `GET /api/v1/admin/store/reservations`
+- 자기 매장 예약 변경: `PATCH /api/v1/admin/store/reservations/{id}`
+- 자기 매장 예약 삭제: `DELETE /api/v1/admin/store/reservations/{id}`
 - 인증: 로그인 + `MANAGER` 권한 필요
 - 자세한 명세는 `API.md`의 §7 참고.
 
 #### 회고
 
 ```
-선택 도구: HandlerMethodArgumentResolver(@LoginMember) + 도메인 자기-방어 (validateMarketOwnership)
+선택 도구: HandlerMethodArgumentResolver(@LoginMember) + 도메인 자기-방어 (validateStoreOwnership)
 다른 후보:
   - Spring Security 도입 (학습 미션 범위 밖, 도입 비용 큼)
   - Interceptor 단독 처리 (어떤 자원에 어떤 권한 필요한지 path 패턴으로만 표현 → URL과 권한 결합)
   - Service 분산 처리 (모든 보호 메서드에 권한 코드 반복 → 누락 위험)
 선택 이유:
   - role check는 자원과 무관한 결정 → 한 곳(Resolver)에 모으면 흩어짐 자체가 발생 안 함.
-  - marketId 비교는 (사용자, 자원) 쌍이 필요 → 두 객체가 메모리에 있을 때 도메인이 자기 자신 보호.
+  - storeId 비교는 (사용자, 자원) 쌍이 필요 → 두 객체가 메모리에 있을 때 도메인이 자기 자신 보호.
   - 컨트롤러 시그니처가 정책 선언이 되어 의도가 시각적으로 드러남.
 인가 판단 위치:
   - Resolver: role (사용자 인가)
-  - Domain (Reservation): marketId 비교 (자원 인가)
+  - Domain (Reservation): storeId 비교 (자원 인가)
 유지하거나 변경하고 싶은 점:
   - 유지: 시그니처-기반 선언적 인가, 도메인 자기-방어 패턴.
   - 변경하고 싶은 점: 실제 운영 시스템이라면 Spring Security로 이관해 typed SecurityContext +

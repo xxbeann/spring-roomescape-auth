@@ -10,7 +10,7 @@ public record ReservationResponse(
         String date,
         ReservationTimeResponse time,
         Long themeId,
-        Long marketId
+        Long storeId
 ) {
     public static ReservationResponse from(Reservation reservation) {
         ReservationTime reservationTime = reservation.getTime();
@@ -20,7 +20,7 @@ public record ReservationResponse(
                 reservation.getDate().toString(),
                 ReservationTimeResponse.from(reservationTime),
                 reservation.getThemeId(),
-                reservation.getMarketId()
+                reservation.getStoreId()
         );
     }
 

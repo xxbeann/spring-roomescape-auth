@@ -157,7 +157,7 @@ public class MemberTest {
     }
 
     @Test
-    void marketId가_0이하면_회원을_생성할_수_없다() {
+    void storeId가_0이하면_회원을_생성할_수_없다() {
         assertThatThrownBy(() -> new Member(
                 1L,
                 "manager@email.com",
@@ -170,7 +170,7 @@ public class MemberTest {
     }
 
     @Test
-    void USER는_marketId가_null이어도_정상_생성된다() {
+    void USER는_storeId가_null이어도_정상_생성된다() {
         assertThatCode(() -> new Member(
                 1L,
                 "user@email.com",
@@ -182,7 +182,7 @@ public class MemberTest {
     }
 
     @Test
-    void MANAGER는_marketId를_가질_수_있다() {
+    void MANAGER는_storeId를_가질_수_있다() {
         Member manager = new Member(
                 4L,
                 "manager-gangnam@email.com",
@@ -193,6 +193,6 @@ public class MemberTest {
         );
 
         assertThat(manager.getRole()).isEqualTo(Role.MANAGER);
-        assertThat(manager.getMarketId()).isEqualTo(1L);
+        assertThat(manager.getStoreId()).isEqualTo(1L);
     }
 }
